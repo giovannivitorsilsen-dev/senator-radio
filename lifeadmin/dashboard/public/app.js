@@ -34,6 +34,13 @@ async function refresh(){
       info.textContent=catalog.live?'Stato confermato dal runtime C++ · aggiornamento recente':
         'Stato runtime non verificato ('+catalog.reason+'): vengono mostrati solo dati di configurazione';
       container.append(info);
+      if(catalog.supervisor){
+        const metrics=document.createElement('p');
+        const s=catalog.supervisor;
+        metrics.textContent='Bridge Lua: uptime '+s.uptimeSeconds+' s · heartbeat inviati '+s.pingsSent+
+          ' · eventi confermati '+s.eventsAccepted+' · errori '+s.errorCount;
+        container.append(metrics);
+      }
       if(catalog.error){
         const warning=document.createElement('p');
         warning.textContent='Segnalazione runtime: '+catalog.error;
