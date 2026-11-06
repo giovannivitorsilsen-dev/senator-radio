@@ -25,6 +25,10 @@ function createLuaBridge(options={}) {
     throw new Error('Invalid trusted resource specs');
   if(statusFile!==undefined && (typeof statusFile!=='string'||!path.isAbsolute(statusFile)))
     throw new Error('LIFE_RESOURCE_STATUS_FILE must be an absolute local path');
+  const maxSilentMs=options.maxSilentMs??10000;
+  if(!Number.isInteger(maxSilentMs)||maxSilentMs<1000||maxSilentMs>60000 ||
+     (options.pingIntervalMs!==undefined && (!Number.isInteger(options.pingIntervalMs)||options.pingIntervalMs<100||options.pingIntervalMs>maxSilentMs)))
+    throw new RangeError('Invalid local supervisor timeout');
   const child=(options.spawn||spawn)(binary,[script,...extraResources],{
     cwd:options.cwd||path.resolve(__dirname,'..'),
     shell:false,stdio:['pipe','pipe','pipe'],windowsHide:true
@@ -35,10 +39,6 @@ function createLuaBridge(options={}) {
   const startedAt=Date.now();
   let lastReplyAt=startedAt;
   let pingsSent=0,eventsAccepted=0,errorCount=0;
-  const maxSilentMs=options.maxSilentMs??10000;
-  if(!Number.isInteger(maxSilentMs)||maxSilentMs<1000||maxSilentMs>60000 ||
-     (options.pingIntervalMs!==undefined && (!Number.isInteger(options.pingIntervalMs)||options.pingIntervalMs<100||options.pingIntervalMs>maxSilentMs)))
-    throw new RangeError('Invalid local supervisor timeout');
   const publish=(state)=>{
     if(!statusFile)return;
     const result={
