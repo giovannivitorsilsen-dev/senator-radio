@@ -1,11 +1,11 @@
 #pragma once
 #include <cstddef>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
 struct lua_State;
+struct lua_Debug;
 
 namespace life {
 class LuaResource {
@@ -25,7 +25,7 @@ private:
   std::map<std::string, int> eventRefs_;
   std::vector<std::string> logs_;
   static void* allocate(void* userdata, void* ptr, std::size_t oldsize, std::size_t newsize);
-  static void budgetHook(lua_State* L, void* debugUnused);
+  static void budgetHook(lua_State* L, lua_Debug* info);
   static int registerEvent(lua_State* L);
   static int logMessage(lua_State* L);
   void callBudgetStart();
