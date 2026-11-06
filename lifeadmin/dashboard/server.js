@@ -2,48 +2,93 @@
 const http=require('node:http');
 const fs=require('node:fs');
 const path=require('node:path');
+const crypto=require('node:crypto');
 const {createStatusMonitor}=require('../core/status');
+const {createJavaVerifier}=require('./java-verifier');
 
 const page=fs.readFileSync(path.join(__dirname,'public','index.html'));
 const script=fs.readFileSync(path.join(__dirname,'public','app.js'));
 const headers={
   'Cache-Control':'no-store',
-  'X-Content-Type-Options':'nosniff',
-  'X-Frame-Options':'DENY',
+  'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY',
   'Referrer-Policy':'no-referrer',
-  'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 };
 const loopback=address=>address==='127.0.0.1'||address==='::1'||address==='::ffff:127.0.0.1';
-function makeDashboard({monitor=createStatusMonitor(),targetPort=3000}={}) {
+function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=createJavaVerifier(),now=Date.now}={}) {
   if(!Number.isInteger(targetPort)||targetPort<1||targetPort>65535)throw new RangeError('Invalid game port');
+  const sessions=new Map();
+  let attempts=[];
+  const reply=(res,code,data,extra={})=>{
+    res.writeHead(code,{...headers,'Content-Type':'application/json; charset=utf-8',...extra});
+    res.end(JSON.stringify(data));
+  };
+  const originOK=(req)=>{
+    const host=String(req.headers.host||'');
+    const origin=String(req.headers.origin||'');
+    return origin==='http://'+host;
+  };
+  const readBody=(req,max=256)=>new Promise((resolve,reject)=>{
+    let body='';
+    req.on('data',b=>{
+      body+=b.toString('utf8');
+      if(Buffer.byteLength(body)>max){reject(Error('too large'));req.destroy();}
+    });
+    req.on('end',()=>resolve(body));req.on('error',reject);
+  });
   return http.createServer(async(req,res)=>{
     const host=String(req.headers.host||'');
     if(!loopback(req.socket.remoteAddress) || !/^(?:127\.0\.0\.1|localhost)(?::\d{1,5})?$/.test(host)){
       res.writeHead(403,headers);res.end('Forbidden');return;
     }
-    if(req.method!=='GET'){
-      res.writeHead(405,{...headers,Allow:'GET'});res.end('Method not allowed');return;
+    const pathname=(req.url||'').split('?')[0];
+    if(req.method==='GET'&&pathname==='/'){
+      res.writeHead(200,{...headers,'Content-Type':'text/html; charset=utf-8'});res.end(page);return;
     }
-    const route=(req.url||'').split('?')[0];
-    if(route==='/'){
-      res.writeHead(200,{...headers,'Content-Type':'text/html; charset=utf-8'});
-      res.end(page);return;
+    if(req.method==='GET'&&pathname==='/app.js'){
+      res.writeHead(200,{...headers,'Content-Type':'application/javascript; charset=utf-8'});res.end(script);return;
     }
-    if(route==='/app.js'){
-      res.writeHead(200,{...headers,'Content-Type':'application/javascript; charset=utf-8'});
-      res.end(script);return;
-    }
-    if(route==='/api/status'){
+    if(req.method==='POST'&&pathname==='/api/login'){
+      if(!originOK(req)){reply(res,403,{error:'Invalid origin'});return;}
+      attempts=attempts.filter(at=>now()-at<60000);
+      if(attempts.length>=5){reply(res,429,{error:'Too many login attempts'});return;}
+      attempts.push(now());
       try {
-        const game=await monitor.status(targetPort);
-        const result={dashboard:'LifeAdmin v0.2',mode:'local-read-only',checkedAt:new Date().toISOString(),game};
-        res.writeHead(200,{...headers,'Content-Type':'application/json; charset=utf-8'});
-        res.end(JSON.stringify(result));
-      } catch {
-        res.writeHead(503,{...headers,'Content-Type':'application/json; charset=utf-8'});
-        res.end(JSON.stringify({error:'Status temporarily unavailable'}));
-      }
+        const body=JSON.parse(await readBody(req));
+        const token=body&&body.token;
+        if(typeof token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(token) || !(await verify(token))){
+          reply(res,401,{error:'Access denied'});return;
+        }
+        const sessionId=crypto.randomBytes(32).toString('hex');
+        sessions.set(sessionId,{token,expires:now()+5*60*1000});
+        reply(res,200,{authorized:true},{'Set-Cookie':'lifeadmin='+sessionId+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=300'});
+      }catch {reply(res,400,{error:'Invalid login request'});}
       return;
+    }
+    const cookie=String(req.headers.cookie||'').match(/(?:^|;\s*)lifeadmin=([a-f0-9]{64})(?=;|$)/);
+    const key=cookie&&cookie[1];
+    const session=key&&sessions.get(key);
+    if(req.method==='POST'&&pathname==='/api/logout'){
+      if(!originOK(req)){reply(res,403,{error:'Invalid origin'});return;}
+      if(key)sessions.delete(key);
+      reply(res,200,{authorized:false},{'Set-Cookie':'lifeadmin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'});
+      return;
+    }
+    if(req.method==='GET'&&pathname==='/api/status'){
+      if(!session||session.expires<=now()){
+        if(key)sessions.delete(key);
+        reply(res,401,{error:'Authentication required'});return;
+      }
+      try {
+        // Permissions and token expiry are rechecked on every protected request.
+        if(!(await verify(session.token))){sessions.delete(key);reply(res,403,{error:'Access revoked'});return;}
+        const game=await monitor.status(targetPort);
+        reply(res,200,{dashboard:'LifeAdmin v0.3',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game});
+      }catch{reply(res,503,{error:'Status temporarily unavailable'});}
+      return;
+    }
+    if(pathname.startsWith('/api/')){
+      reply(res,req.method==='GET'?404:405,{error:'Not available'});return;
     }
     res.writeHead(404,headers);res.end('Not found');
   });
@@ -52,8 +97,8 @@ function startDashboard(env=process.env) {
   const port=Number(env.LIFE_ADMIN_PORT||4101);
   const targetPort=Number(env.LIFE_ADMIN_TARGET_PORT||3000);
   if(!Number.isInteger(port)||port<1||port>65535)throw new RangeError('Invalid admin port');
-  const server=makeDashboard({targetPort});
-  server.listen(port,'127.0.0.1',()=>console.log('LifeAdmin LOCAL read-only: http://127.0.0.1:'+port));
+  const server=makeDashboard({targetPort,verify:createJavaVerifier({env})});
+  server.listen(port,'127.0.0.1',()=>console.log('LifeAdmin LOCAL session-gated: http://127.0.0.1:'+port));
   return server;
 }
 if(require.main===module)startDashboard();

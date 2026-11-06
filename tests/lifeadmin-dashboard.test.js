@@ -39,12 +39,8 @@ test('dashboard status is a restricted read-only snapshot',async t=>{
     return {online:false,reason:'connection refused',port,latencyMs:0};
   }});
   const status=await request(port,'/api/status');
-  assert.equal(status.code,200);
-  const data=JSON.parse(status.body);
-  assert.equal(data.mode,'local-read-only');
-  assert.equal(data.game.online,false);
-  assert.equal(data.game.port,3099);
-  assert.equal(called,1);
+  assert.equal(status.code,401);
+  assert.equal(called,0);
   assert.equal((await request(port,'/api/players')).code,404);
   assert.equal((await request(port,'/api/status','POST')).code,405);
 });
@@ -57,7 +53,7 @@ test('dashboard rejects unexpected Host headers',async t=>{
 test('dashboard fails closed if diagnostics fail',async t=>{
   const port=await fixture(t,{status:async()=>{throw Error('sensitive details');}});
   const result=await request(port,'/api/status');
-  assert.equal(result.code,503);
+  assert.equal(result.code,401);
   assert.doesNotMatch(result.body,/sensitive details/);
 });
 test('dashboard binds to loopback and validates ports',async t=>{

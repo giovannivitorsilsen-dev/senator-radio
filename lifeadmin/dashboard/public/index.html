@@ -24,10 +24,23 @@ code{color:#9bd1fc} .status{font-size:.88rem}
 <script defer src="/app.js"></script>
 </head>
 <body>
-<header><div class="brand">◆ Life<span>Admin</span> <span class="sub">v0.2</span></div><div class="sub">PROJECT LIFE RP · Monitor locale</div></header>
+<header><div class="brand">◆ Life<span>Admin</span> <span class="sub">v0.3</span></div><div class="sub">PROJECT LIFE RP · Monitor locale</div></header>
 <main>
 <h1>Panoramica server</h1>
 <p class="muted">Diagnostica in sola lettura della demo multiplayer. Aggiornamento automatico ogni 5 secondi.</p>
+<section class="panel" id="login-panel">
+<h2>Accesso amministrativo</h2>
+<p class="muted">Inserisci un token di sessione LifeAccount già creato e autorizzato per questa community. Il token non viene salvato nel browser.</p>
+<form id="login-form" autocomplete="off">
+<label for="login-token">Token di sessione</label>
+<input id="login-token" type="password" required minlength="43" maxlength="43" autocomplete="off" spellcheck="false"
+style="display:block;width:100%;max-width:520px;padding:11px;margin:10px 0;background:#10141e;color:#fff;border:1px solid #516581;border-radius:9px">
+<button type="submit">Accedi</button>
+</form>
+<p id="auth-message" class="muted" role="status"></p>
+</section>
+<section id="dashboard-panel" hidden>
+<button id="logout" type="button">Esci da LifeAdmin</button>
 <div class="grid">
 <section class="card"><div class="label">Stato della demo</div><div class="value" id="state">Verifica…</div><div class="status muted" id="reason">–</div></section>
 <section class="card"><div class="label">Latenza HTTP locale</div><div class="value" id="latency">–</div><div class="status muted">Non è il ping dei giocatori</div></section>
@@ -39,6 +52,7 @@ code{color:#9bd1fc} .status{font-size:.88rem}
 <button type="button" id="refresh">Aggiorna adesso</button>
 <p class="muted" role="status" aria-live="polite" id="message"></p>
 </section>
-<footer>LifeAdmin non è ancora txAdmin: nessun login staff, moderazione, gestione risorse o monitoraggio CPU/RAM. Dashboard vincolata a loopback; non inoltrare pubblicamente la porta 4101. Android resta per il gameplay.</footer>
+</section>
+<footer>LifeAdmin non è ancora txAdmin: sessioni LifeAccount richieste; MFA non ancora disponibile, moderazione, gestione risorse o monitoraggio CPU/RAM. Dashboard vincolata a loopback; non inoltrare pubblicamente la porta 4101. Android resta per il gameplay.</footer>
 </main>
 </body></html>
