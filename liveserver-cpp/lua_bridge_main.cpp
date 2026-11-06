@@ -31,7 +31,7 @@ int main(int argc,char** argv) {
     std::string line;
     while(std::getline(std::cin,line)) {
       if(line=="PING") {
-        std::cout<<"PONG\\n";
+        std::cout<<"PONG\n";
         std::cout<<"RESOURCE welcome "<<(runtime.running("welcome")?"STARTED":"STOPPED")<<"\n"<<std::flush;
         continue;
       }
@@ -43,7 +43,7 @@ int main(int argc,char** argv) {
       std::cout<<"EVENT_OK\n"<<std::flush;
     }
     runtime.stop("welcome");
-    std::cout<<"RESOURCE welcome STOPPED\\n"<<std::flush;
+    std::cout<<"RESOURCE welcome STOPPED\n"<<std::flush;
   } catch(const std::exception& error) {
     std::cerr<<"Lua bridge error: "<<error.what()<<"\n";
     return 1;
