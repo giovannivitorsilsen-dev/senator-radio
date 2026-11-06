@@ -7,6 +7,7 @@ void LuaHost::add(const std::string& name, std::vector<std::string> dependencies
   manager_.add({name, std::move(dependencies)});
   scripts_[name] = std::move(source);
 }
+std::vector<std::string> LuaHost::order(const std::string& name) const { return manager_.order(name); }
 void LuaHost::start(const std::string& name) {
   const auto order = manager_.order(name);
   // Construct every missing resource first. Errors leave the manager unchanged.
@@ -28,6 +29,10 @@ void LuaHost::restart(const std::string& name) {
 }
 void LuaHost::emit(const std::string& event, const std::string& payload) {
   for (auto& [name, script] : active_) script->emit(event, payload);
+}
+void LuaHost::emitTo(const std::string& resource,const std::string& event,const std::string& payload) {
+  auto found=active_.find(resource);
+  if(found!=active_.end())found->second->emit(event,payload);
 }
 bool LuaHost::running(const std::string& name) const { return manager_.running(name); }
 const std::vector<std::string>& LuaHost::logs(const std::string& name) const {

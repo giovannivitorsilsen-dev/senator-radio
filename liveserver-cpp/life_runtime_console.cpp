@@ -1,4 +1,5 @@
 #include "life_runtime_console.hpp"
+#include <algorithm>
 #include <sstream>
 #include <stdexcept>
 namespace life {
@@ -25,7 +26,8 @@ std::string LifeRuntimeConsole::execute(const std::string& command) {
     }
     if(input>>extra)return "ERR unexpected argument";
     if(action=="status"){
-      if(runtime_.names().end()==std::find(runtime_.names().begin(),runtime_.names().end(),name))
+      auto resources=runtime_.names();
+      if(std::find(resources.begin(),resources.end(),name)==resources.end())
         return "ERR unknown resource";
       return runtime_.running(name)?"started":"stopped";
     }
