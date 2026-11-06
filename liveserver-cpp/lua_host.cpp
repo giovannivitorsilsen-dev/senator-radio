@@ -3,8 +3,11 @@
 #include <utility>
 
 namespace life {
-void LuaHost::add(const std::string& name, std::vector<std::string> dependencies, std::string source) {
-  manager_.add({name, std::move(dependencies)});
+void LuaHost::add(const std::string& name, std::vector<std::string> dependencies, std::string source,
+                  std::vector<std::string> capabilities) {
+  permissions_.registerResource(name,capabilities);
+  try { manager_.add({name, std::move(dependencies)}); }
+  catch (...) { permissions_.revoke(name); throw; }
   scripts_[name] = std::move(source);
 }
 std::vector<std::string> LuaHost::order(const std::string& name) const { return manager_.order(name); }
@@ -14,7 +17,7 @@ void LuaHost::start(const std::string& name) {
   std::map<std::string, std::unique_ptr<LuaResource>> staged;
   for (const auto& dependency : order) {
     if (!active_.count(dependency)) staged.emplace(
-        dependency, std::make_unique<LuaResource>(dependency, scripts_.at(dependency)));
+        dependency, std::make_unique<LuaResource>(dependency, scripts_.at(dependency), 4 * 1024 * 1024, &permissions_));
   }
   manager_.start(name);
   for (auto& entry : staged) active_.emplace(entry.first, std::move(entry.second));
