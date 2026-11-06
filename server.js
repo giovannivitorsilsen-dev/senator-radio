@@ -11,7 +11,8 @@ const luaBridge=createLuaBridge({
   enabled:process.env.LIFE_LUA_BRIDGE==='1',
   binary:process.env.LIFE_LUA_BRIDGE_BIN,
   script:process.env.LIFE_LUA_SCRIPT,
-  statusFile:process.env.LIFE_RESOURCE_STATUS_FILE
+  statusFile:process.env.LIFE_RESOURCE_STATUS_FILE,
+  extraResources:JSON.parse(process.env.LIFE_LUA_EXTRA_RESOURCES||'[]')
 });
 process.on('exit',()=>luaBridge.close());
 const server=http.createServer((req,res)=>{
