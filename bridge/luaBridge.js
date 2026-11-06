@@ -60,18 +60,20 @@ function createLuaBridge(options={}) {
       if(match) {
         const [,name,state,deps='']=match;
         const dependencies=deps?deps.split(','):[];
-        // A dependency list emitted as space-separated by older/newer bridge
-        // versions is normalized separately below.
         if(dependencies.length<=16&&dependencies.every(v=>/^[A-Za-z0-9_-]{1,64}$/.test(v))){
           known.set(name,{name,status:state==='STARTED'?'started':'stopped',dependencies});
           if(name==='welcome')confirmed=state==='STARTED';
-          if(state==='STARTED')gracefulStop=false;
-          if(state==='STOPPED')gracefulStop=true;
-          publish(state==='STARTED'?'running':'stopped');
+          gracefulStop=[...known.values()].every(r=>r.status==='stopped');
+          publish(gracefulStop?'stopped':'running');
         }
       }else if(/^ERROR (runtime startup|runtime callback)$/.test(line)){
         lastError=line.slice(6);
-        publish('running');
+        if(lastError==='runtime startup') {
+          confirmed=false;
+          publish('unavailable');
+        }else{
+          publish('running');
+        }
       }
       // PONG / EVENT_OK are deliberately not interpreted as resource state.
     }
