@@ -12,7 +12,8 @@ namespace life {
 class LifeRuntime {
 public:
   void add(const std::string& name, std::vector<std::string> dependencies,
-           std::string source, std::vector<std::string> eventNames);
+           std::string source, std::vector<std::string> eventNames,
+           std::vector<std::string> capabilities = {});
   void start(const std::string& name);
   void stop(const std::string& name);
   void restart(const std::string& name);
