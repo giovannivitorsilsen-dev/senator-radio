@@ -109,3 +109,11 @@ Il bridge C++/Lua della demo è monitorato da un watchdog: senza risposta verifi
 The game bridge now optionally signs local resource snapshots with HMAC-SHA256 using `LIFE_TELEMETRY_HMAC_KEY`, and LifeAdmin verifies the signature before accepting live resource status. With a configured key, unsigned or tampered snapshots are rejected. This integrity protection is **not yet an authenticated IPC socket or production process isolation**. Keep the key private on the PC host, never in the Android game client.
 
 A new end-to-end test starts the actual C++ Lua bridge (when compiled) and verifies `welcome` and `taxi` resource telemetry through the Node layer. The Linux Lua CI workflow has been updated to run that check. Details: [docs/LIFEADMIN_V08.md](docs/LIFEADMIN_V08.md). No remote admin operations were added.
+
+## LifeAdmin v0.9 — authenticated local Unix IPC telemetry
+
+An opt-in **read-only Unix-domain socket** is available for local telemetry from the Node/C++/Lua game process to LifeAdmin. Requests use an HMAC-authenticated random nonce, and replies contain a signed snapshot bound to that nonce. LifeAdmin validates the snapshot and applies its existing LifeAccount `ADMIN_VIEW` policy before exposing any resource status.
+
+Linux setup: supply `LIFE_TELEMETRY_IPC_PATH` pointing to a socket inside an operator-owned private directory (0700) and `LIFE_TELEMETRY_HMAC_KEY` (64 hexadecimal characters) to both game and admin processes. The local socket is read-only and no TCP admin port is introduced. The old signed file option remains available when IPC is not selected. Windows named-pipe support is **not yet implemented**.
+
+New unit tests and a native C++/Lua → Unix IPC end-to-end test live in `tests/lifeadmin-local-ipc.test.js` and `tests/life-bridge-native-e2e.test.js`. The native test is skipped unless a compiled binary is configured. See [docs/LIFEADMIN_V09.md](docs/LIFEADMIN_V09.md) for setup, security boundaries and limitations. **Do not expose LifeAdmin port 4101 to the Internet.**
