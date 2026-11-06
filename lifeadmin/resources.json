@@ -1,0 +1,12 @@
+[
+  {
+    "name": "core",
+    "dependencies": []
+  },
+  {
+    "name": "taxi",
+    "dependencies": [
+      "core"
+    ]
+  }
+]
