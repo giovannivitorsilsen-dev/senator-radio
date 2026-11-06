@@ -83,3 +83,11 @@ Vedi [docs/LIFEADMIN_V03.md](docs/LIFEADMIN_V03.md) per preparare JDBC, avviare 
 La dashboard autenticata ora mostra le risorse **dichiarate** in `lifeadmin/resources.json` (nomi e dipendenze) e uptime/RAM **del processo amministrativo**, senza fingere di conoscere lo stato reale delle VM Lua. La nuova route `/api/resources` richiede la stessa sessione Java e il permesso community `ADMIN_VIEW` della diagnostica.
 
 Il verificatore Java ha limiti di concorrenza e timeout. Prima di usare il pannello serve configurare Java/JDBC e un account staff autorizzato. Nessuna porta amministrativa deve essere resa pubblica. Dettagli: [docs/LIFEADMIN_V04.md](docs/LIFEADMIN_V04.md).
+
+## LifeAdmin v0.5 — telemetria C++ Lua confermata
+
+Il bridge C++/Lua della demo produce ora un messaggio di stato `RESOURCE welcome STARTED/STOPPED` e risponde ai controlli `PING` via stdin. Il server Node può trasferire queste conferme a un file diagnostico locale con `LIFE_RESOURCE_STATUS_FILE`, letto dalla dashboard **soltanto dopo la verifica LifeAccount Java + permesso ADMIN_VIEW**.
+
+L'interfaccia distingue le conferme recenti da file scaduti (oltre 10 s), mancanti o non validi; non presenta come avviate le risorse presenti soltanto nel catalogo. È osservata **solo la risorsa `welcome` del bridge sperimentale**, non l'intero motore FXServer-like. Nessun comando remoto di avvio/arresto è stato aggiunto.
+
+Compilazione, configurazione e limiti: [docs/LIFEADMIN_V05.md](docs/LIFEADMIN_V05.md). Non esporre la porta amministrativa 4101; il pannello rimane PC-only.
