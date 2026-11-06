@@ -8,9 +8,11 @@ struct lua_State;
 struct lua_Debug;
 
 namespace life {
+class LifePermissions;
 class LuaResource {
 public:
-  LuaResource(std::string name, const std::string& source, std::size_t memoryLimit = 4 * 1024 * 1024);
+  LuaResource(std::string name, const std::string& source, std::size_t memoryLimit = 4 * 1024 * 1024,
+              const LifePermissions* permissions = nullptr);
   ~LuaResource();
   LuaResource(const LuaResource&) = delete;
   LuaResource& operator=(const LuaResource&) = delete;
@@ -19,6 +21,7 @@ public:
   const std::string& name() const { return name_; }
 private:
   std::string name_;
+  const LifePermissions* permissions_ = nullptr;
   lua_State* state_ = nullptr;
   std::size_t used_ = 0, memoryLimit_;
   int instructionsLeft_ = 0;
@@ -28,6 +31,8 @@ private:
   static void budgetHook(lua_State* L, lua_Debug* info);
   static int registerEvent(lua_State* L);
   static int logMessage(lua_State* L);
+  static int hasCapability(lua_State* L);
+  static int requestAction(lua_State* L);
   void callBudgetStart();
   void executeSource(const std::string& source);
 };
