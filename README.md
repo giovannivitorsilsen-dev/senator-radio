@@ -69,3 +69,11 @@ Apri **http://127.0.0.1:4101** sul PC che esegue LifeAdmin. Mostra la risposta H
 **Non inoltrare o rendere pubblica la porta 4101 su Codespaces.** La dashboard non ha ancora autenticazione né controlli amministrativi: sono ammesse solo letture su loopback. I dati non rappresentano lo stato del runtime C++/Lua o del database Java.
 
 Dettagli e limitazioni: [docs/LIFEADMIN_V02.md](docs/LIFEADMIN_V02.md).
+
+## LifeAdmin v0.3 — sessioni Java e permesso ADMIN_VIEW
+
+La dashboard locale è ora **protetta da un verificatore Java obbligatorio**. Non è possibile leggere `/api/status` senza una sessione LifeAccount valida e il permesso `ADMIN_VIEW` per la community configurata. Le autorizzazioni vengono ricontrollate per ogni richiesta di diagnostica, e la sessione della dashboard dura al massimo 5 minuti. Senza configurazione Java/JDBC l'accesso è negato.
+
+La password dell'account non viene inserita nella dashboard. Esiste una CLI Java per creare un token di sessione da un **account già registrato**, solo tramite un terminale interattivo fidato. Non sono ancora disponibili MFA, login web con password, gestioni staff remote, restart server, o controlli amministrativi del gioco.
+
+Vedi [docs/LIFEADMIN_V03.md](docs/LIFEADMIN_V03.md) per preparare JDBC, avviare `npm run admin`, ottenere il token locale e comprendere i limiti. **Non pubblicare la porta 4101 o usarla tramite tunnel Codespaces.**
