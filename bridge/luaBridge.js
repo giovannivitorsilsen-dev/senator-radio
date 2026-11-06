@@ -119,12 +119,13 @@ function createLuaBridge(options={}) {
   if(child.stdin)child.stdin.on('error',stopped);
   if(child.stderr)child.stderr.on('data',()=>{});
   const timer=setInterval(()=>{
-    if(!running||!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return;
+    if(!running)return;
     if(Date.now()-lastReplyAt>maxSilentMs){
       stopped('heartbeat-timeout');
       try{child.kill('SIGKILL');}catch{}
       return;
     }
+    if(!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return;
     try{pingsSent++;child.stdin.write('PING\n');}catch{stopped();}
   },options.pingIntervalMs??3000);
   timer.unref?.();
