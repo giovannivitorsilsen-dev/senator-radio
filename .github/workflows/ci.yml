@@ -1,0 +1,43 @@
+name: PROJECT LIFE RP Multi-Platform Checks
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  linux-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install browser-demo dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test WebSocket multiplayer
+        run: npm test
+      - name: Test Java staff/supporter policies
+        run: |
+          mkdir -p core-java/out
+          javac -d core-java/out core-java/src/main/java/rp/core/LifeCore.java core-java/src/test/java/rp/core/LifeCoreTest.java
+          java -ea -cp core-java/out rp.core.LifeCoreTest
+      - name: Test C/C++ ABI
+        run: |
+          cd native
+          cc -c -std=c11 src/life_motion.c -o motion.o
+          c++ -std=c++17 examples/main.cpp motion.o -lm -o motion_test
+          ./motion_test
+      - name: Docker image build
+        run: docker build -t life-rp-smoke .
+  windows-node:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test

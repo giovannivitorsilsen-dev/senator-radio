@@ -24,7 +24,7 @@ docker compose up --build -d game
 docker compose ps
 docker compose logs -f game
 ```
-For a disposable PostgreSQL instance, create a local `.env` file using `deploy/.env.example`, set a strong unique password and run `docker compose --profile postgres up -d postgres`. It is intentionally **not connected to the game yet** and is **not exposed** to the Internet.
+For a disposable PostgreSQL instance, create a local `.env` file using `deploy/.env.example`, set a strong unique password and run `docker compose -f compose.yaml -f compose.postgres.yaml up -d postgres`. It is intentionally **not connected to the game yet** and is **not exposed** to the Internet.
 
 ## Database choices
 - PostgreSQL: `database/postgresql/001_core.sql`

@@ -1,10 +1,10 @@
 {
   "name": "project-life-rp-codespaces-test",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js"
+    "test": "node --test tests/*.test.js && node --check server.js"
   },
   "engines": {
     "node": ">=18"
