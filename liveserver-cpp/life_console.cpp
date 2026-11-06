@@ -17,7 +17,7 @@ std::string LifeConsole::execute(const std::string& command) {
  }
  if(!(in >> name) || (in >> extra)) return "ERR expected one resource name";
  try {
-  if(action=="status") return manager_.running(name) ? "started" : "stopped";
+  if(action=="status") { manager_.order(name); return manager_.running(name) ? "started" : "stopped"; }
   if(action=="start") {
    if(manager_.running(name)) return "ERR already started";
    manager_.start(name);

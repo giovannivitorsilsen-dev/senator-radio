@@ -36,4 +36,9 @@ void ResourceManager::stop(const std::string& name) {
  active.erase(name);
 }
 bool ResourceManager::running(const std::string& name) const { return active.count(name)>0; }
+std::vector<std::string> ResourceManager::names() const {
+ std::vector<std::string> result;
+ for(const auto& item: resources) result.push_back(item.first);
+ return result;
+}
 }

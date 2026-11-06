@@ -11,6 +11,7 @@ class ResourceManager {
  void start(const std::string& name);
  void stop(const std::string& name);
  bool running(const std::string& name) const;
+ std::vector<std::string> names() const;
  std::vector<std::string> order(const std::string& name) const;
  private:
  std::map<std::string,Resource> resources;
