@@ -24,3 +24,17 @@
 
 ## Prossima integrazione
 Collegare `AccountAuth.authenticate(token)` alla risoluzione di `Principal` nel server dedicato, poi usare `CommunityJdbc.hasStaffPermission` in ogni operazione amministrativa. In seguito integrare inventario/veicoli con `hasActiveSupporterBenefit` per bloccare trasferimenti e accessi non autorizzati.
+
+## Test JDBC reali (aggiunti in questa fase)
+La suite `core-java/src/test/java/rp/core/JdbcIntegrationTest.java` carica le migrazioni `001`, `002`, `003` nell'ordine corretto e prova registrazione, autenticazione, sessione salvata, logout, community, autorizzazioni staff isolate, revoca, benefici supporter non trasferibili e audit persistente.
+
+Il workflow GitHub Actions `.github/workflows/ci.yml` usa servizi temporanei PostgreSQL 17 e MariaDB 11.4, Java 17 e i relativi driver JDBC. Le password hard-coded nel workflow sono **solo credenziali temporanee di CI**, non credenziali di produzione.
+
+Per eseguire localmente, creare un database di test vuoto, impostare `LIFE_DB_DIALECT` (`postgresql` o `mariadb`), `LIFE_JDBC_URL`, `LIFE_JDBC_USER`, `LIFE_JDBC_PASSWORD` e lanciare da root del repository:
+
+```sh
+mvn -B -f core-java/pom.xml test-compile dependency:copy-dependencies -DoutputDirectory=target/dependency
+java -ea -cp "core-java/target/classes:core-java/target/test-classes:core-java/target/dependency/*" rp.core.JdbcIntegrationTest
+```
+
+Il percorso classpath mostrato è per Linux; Windows usa `;` al posto di `:`. La suite modifica lo schema del database fornito: **mai eseguirla su un database con dati reali**. L'esito delle esecuzioni CI non è automaticamente garantito dalla pubblicazione del workflow.
