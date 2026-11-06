@@ -38,3 +38,18 @@ Istruzioni dettagliate e limiti: [`docs/LIFERUNTIME_INTEGRATION.md`](docs/LIFERU
 Il server C++ registra un elenco esplicito di capacità per ciascuna risorsa Lua. Le nuove API sono `HasCapability(capability)` e `RequestAction(capability, payload)`. **Solo `chat.notice` ha un'implementazione dimostrativa**, che scrive nel log locale della risorsa dopo la verifica del permesso. Nessuna API per staff, denaro, veicoli o Supporter è esposta dagli script in questa versione.
 
 Sono stati aggiunti controlli sulle capacità sconosciute, sui wildcard, sulle risorse prive di concessioni e sulla separazione tra risorse. Test C++ base e test Lua aggiornati. Leggi [`docs/LIFEPERMISSIONS_V05.md`](docs/LIFEPERMISSIONS_V05.md) per limiti e istruzioni. Le build/CI non sono ancora confermate.
+
+## LifeAdmin v0.1 — riuso selettivo txAdmin MIT
+
+Abbiamo avviato la componente gestionale PC-only: la cache di txAdmin `core/lib/MemCache.ts` è stata adattata (MIT, attribuzione in `vendor/txadmin/LICENSE`) e utilizzata in un **monitor di sola lettura** per la demo server locale.
+
+```sh
+npm start
+# in un secondo terminale:
+node lifeadmin/cli.js status
+npm test
+```
+
+Il monitor controlla esclusivamente `127.0.0.1:3000` (porta configurabile tramite `LIFE_ADMIN_TARGET_PORT`) e non esegue comandi amministrativi né espone una dashboard web. È un primo componente tecnico, **non** il txAdmin completo.
+
+Modulo e test: `lifeadmin/` e `tests/lifeadmin.test.js`; audit licenze, moduli da riutilizzare e limiti: [docs/TXADMIN_REUSE_AUDIT.md](docs/TXADMIN_REUSE_AUDIT.md).
