@@ -15,12 +15,3 @@ La mappa Demo City di Unity **non è inclusa**. Non caricare password, chiavi o 
 
 ## Risorse
 Per sostituire questa demo con la Alpha 1.1 completa, bisogna caricare i sorgenti dello ZIP `project_life_rp_alpha_11_pc_3d_editor.zip` nel repository. Il file ZIP rimane disponibile nella conversazione.
-
-## Nuovo nucleo sperimentale (C++, C, Lua, Java)
-
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — struttura tecnica e sicurezza.
-- [`core-java/`](core-java/) — regole LifeStaff e LifeSupporter, test Java 17.
-- [`native/`](native/) — interfaccia C e componente di movimento utilizzato da C++.
-- [`scripts-lua/`](scripts-lua/) — esempio di contratto per futuri script delle community.
-
-**Attenzione:** questi moduli sono prototipi separati. Non sono ancora collegati al server multiplayer Node.js, non sono stati collaudati tramite CI e non forniscono ancora compatibilità ESX/QBCore/vRPex eseguibile.
