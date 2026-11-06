@@ -12,6 +12,7 @@ const luaBridge=createLuaBridge({
   binary:process.env.LIFE_LUA_BRIDGE_BIN,
   script:process.env.LIFE_LUA_SCRIPT,
   statusFile:process.env.LIFE_RESOURCE_STATUS_FILE,
+  auditFile:process.env.LIFE_SUPERVISOR_AUDIT_FILE,
   extraResources:JSON.parse(process.env.LIFE_LUA_EXTRA_RESOURCES||'[]')
 });
 process.on('exit',()=>luaBridge.close());
