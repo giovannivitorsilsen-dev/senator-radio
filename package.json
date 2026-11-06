@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/*.test.js && node --check server.js"
+    "test": "node --test tests/*.test.js && node --check server.js && node --check lifeadmin/dashboard/server.js && node --check lifeadmin/dashboard/public/app.js",
+    "admin": "node lifeadmin/dashboard/server.js",
+    "admin:status": "node lifeadmin/cli.js status"
   },
   "engines": {
     "node": ">=18"
