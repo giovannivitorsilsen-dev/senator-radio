@@ -45,3 +45,17 @@ Apri `http://127.0.0.1:4101` **sulla macchina che ospita il pannello**, inserisc
 npm test
 ```
 I test di `tests/lifeadmin-auth.test.js` usano un verificatore simulato per provare gli stati HTTP. Il test Java con PostgreSQL/MariaDB reali rimane da validare tramite CI e configurazione database.
+
+## Ottenere il token da un account esistente
+
+Dopo aver impostato le variabili `LIFE_JDBC_*` e aver compilato Java, sul terminale **locale del PC**:
+
+```sh
+java -cp "core-java/target/classes:core-java/target/dependency/*" rp.core.AdminLocalLogin NOMEACCOUNT
+```
+
+Su Windows sostituire il separatore `:` del classpath con `;`. La password viene richiesta interattivamente senza mostrarla sullo schermo. Il programma stampa un token temporaneo soltanto se la password dell'account è corretta. **Il token non conferisce automaticamente privilegi staff**: LifeAdmin lo accetterà soltanto se il relativo account è proprietario della community configurata o possiede `ADMIN_VIEW` al momento della richiesta.
+
+Non salvare il token in screenshot, file, cronologia di shell, messaggi condivisi o log pubblici. La dashboard conserva il token in memoria server fino alla scadenza della sessione locale (massimo cinque minuti); la sessione LifeAccount sottostante ha una durata propria.
+
+**Limite operativo:** serve un account già registrato e una community già creata. Il prototipo non include ancora una procedura grafica di registrazione o provisioning del primo proprietario. La creazione deve essere fatta con i servizi Java trusted già esistenti, non dagli script Lua o dal browser pubblico.
