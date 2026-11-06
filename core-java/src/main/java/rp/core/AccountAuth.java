@@ -117,11 +117,16 @@ public final class AccountAuth {
     /** PostgreSQL or MariaDB/MySQL JDBC implementation. The SQL schemas are in database/. */
     public static final class JdbcStore implements Store {
         private final DataSource ds;
+        private static void setUuid(PreparedStatement query, int index, UUID value) throws SQLException {
+            String product = query.getConnection().getMetaData().getDatabaseProductName().toLowerCase(Locale.ROOT);
+            if (product.contains("postgresql")) query.setObject(index, value);
+            else query.setString(index, value.toString());
+        }
         public JdbcStore(DataSource ds) { this.ds = Objects.requireNonNull(ds); }
         @Override public void create(Account a) throws SQLException {
             try (Connection c = ds.getConnection();
                  PreparedStatement q = c.prepareStatement("INSERT INTO accounts(id,username,password_hash) VALUES (?,?,?)")) {
-                q.setString(1, a.id().toString());
+                setUuid(q, 1, a.id());
                 q.setString(2, a.username());
                 q.setString(3, a.encodedPassword());
                 q.executeUpdate();
@@ -141,7 +146,7 @@ public final class AccountAuth {
         @Override public void saveSession(String tokenHash, UUID accountId, long expiry) throws SQLException {
             try (Connection c=ds.getConnection();
                  PreparedStatement q=c.prepareStatement("INSERT INTO auth_sessions(token_hash,account_id,expires_at_epoch) VALUES (?,?,?)")) {
-                q.setString(1,tokenHash);q.setString(2,accountId.toString());q.setLong(3,expiry);
+                q.setString(1,tokenHash);setUuid(q, 2, accountId);q.setLong(3,expiry);
                 q.executeUpdate();
             }
         }
