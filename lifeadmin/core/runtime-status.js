@@ -24,7 +24,16 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
         const fresh=age>=0 && age<=maxAgeMs;
         if(!fresh)return {live:false,reason:'stale',resources:catalog};
         if(snapshot.error!==undefined && snapshot.error!==null &&
-           !['runtime startup','runtime callback'].includes(snapshot.error))throw Error('invalid error');
+           !['runtime startup','runtime callback','runtime heartbeat timeout'].includes(snapshot.error))throw Error('invalid error');
+        const supervisor=snapshot.supervisor;
+        if(supervisor!==undefined && supervisor!==null &&
+          (!Number.isSafeInteger(supervisor.uptimeSeconds)||supervisor.uptimeSeconds<0||
+           !Number.isSafeInteger(supervisor.pingsSent)||supervisor.pingsSent<0||
+           !Number.isSafeInteger(supervisor.eventsAccepted)||supervisor.eventsAccepted<0||
+           !Number.isSafeInteger(supervisor.errorCount)||supervisor.errorCount<0||
+           (supervisor.lastReplyAt!==null &&
+             (!Number.isSafeInteger(supervisor.lastReplyAt)||supervisor.lastReplyAt>now()))))
+          throw Error('invalid supervisor data');
         const active=[];
         const names=new Set();
         for(const resource of snapshot.resources) {
@@ -44,6 +53,13 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
         return {
           live,reason:live?'confirmed':'bridge-'+snapshot.processState,
           error:snapshot.error||null,
+          supervisor:supervisor?{
+            uptimeSeconds:supervisor.uptimeSeconds,
+            pingsSent:supervisor.pingsSent,
+            eventsAccepted:supervisor.eventsAccepted,
+            errorCount:supervisor.errorCount,
+            lastReplyAt:supervisor.lastReplyAt
+          }:null,
           observedAt:snapshot.observedAt,
           resources:[
             ...catalog.map(row=>{
