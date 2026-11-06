@@ -1,4 +1,5 @@
 #include "lua_resource.hpp"
+#include "life_permissions.hpp"
 #include <lua.hpp>
 #include <cstdlib>
 #include <new>
@@ -67,8 +68,9 @@ int LuaResource::logMessage(lua_State* L) {
   if (self->logs_.size() < 128) self->logs_.emplace_back(value, length > 256 ? 256 : length);
   return 0;
 }
-LuaResource::LuaResource(std::string name, const std::string& source, std::size_t memoryLimit)
-  : name_(std::move(name)), memoryLimit_(memoryLimit) {
+LuaResource::LuaResource(std::string name, const std::string& source, std::size_t memoryLimit,
+                         const LifePermissions* permissions)
+  : name_(std::move(name)), permissions_(permissions), memoryLimit_(memoryLimit) {
   if (memoryLimit_ < 64 * 1024) throw std::invalid_argument("memory limit too low");
   state_ = lua_newstate(allocate, this);
   if (!state_) throw std::runtime_error("cannot allocate Lua state");
@@ -84,6 +86,12 @@ LuaResource::LuaResource(std::string name, const std::string& source, std::size_
     lua_pushlightuserdata(state_, this);
     lua_pushcclosure(state_, logMessage, 1);
     lua_setglobal(state_, "Log");
+    lua_pushlightuserdata(state_, this);
+    lua_pushcclosure(state_, hasCapability, 1);
+    lua_setglobal(state_, "HasCapability");
+    lua_pushlightuserdata(state_, this);
+    lua_pushcclosure(state_, requestAction, 1);
+    lua_setglobal(state_, "RequestAction");
     executeSource(source);
   } catch (...) {
     lua_close(state_);
