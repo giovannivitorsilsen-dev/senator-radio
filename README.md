@@ -103,3 +103,9 @@ Il protocollo è ancora **sperimentale e circoscritto al bridge della demo**, no
 Il bridge C++/Lua della demo è monitorato da un watchdog: senza risposta verificata entro 10 secondi lo stato passa a non disponibile e il processo bloccato viene terminato, senza riavvio automatico. La dashboard amministrativa autenticata mostra uptime, PING inviati, eventi confermati ed errori generici del bridge, non dell'intero server di gioco.
 
 È inoltre disponibile un journal locale JSONL **opzionale**, limitato alle categorie d'evento non sensibili, configurato via `LIFE_SUPERVISOR_AUDIT_FILE`. Nessuna operazione staff o restart è abilitata via browser. I test sono in `tests/lifeadmin-supervisor*.test.js`; dettagli in [docs/LIFEADMIN_V07.md](docs/LIFEADMIN_V07.md).
+
+## LifeAdmin v0.8 — signed local telemetry and integration checks
+
+The game bridge now optionally signs local resource snapshots with HMAC-SHA256 using `LIFE_TELEMETRY_HMAC_KEY`, and LifeAdmin verifies the signature before accepting live resource status. With a configured key, unsigned or tampered snapshots are rejected. This integrity protection is **not yet an authenticated IPC socket or production process isolation**. Keep the key private on the PC host, never in the Android game client.
+
+A new end-to-end test starts the actual C++ Lua bridge (when compiled) and verifies `welcome` and `taxi` resource telemetry through the Node layer. The Linux Lua CI workflow has been updated to run that check. Details: [docs/LIFEADMIN_V08.md](docs/LIFEADMIN_V08.md). No remote admin operations were added.
