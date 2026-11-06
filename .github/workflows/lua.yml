@@ -19,3 +19,13 @@ jobs:
           cmake --build liveserver-cpp/build-lua --parallel 2
       - name: Run resource and Lua tests
         run: ctest --test-dir liveserver-cpp/build-lua --output-on-failure
+      - name: Install Node.js for end-to-end bridge test
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript unit tests and native Lua IPC test
+        env:
+          LIFE_CPP_BRIDGE_BIN: ${{ github.workspace }}/liveserver-cpp/build-lua/lifeserver-lua-bridge
+        run: |
+          npm ci
+          npm test
