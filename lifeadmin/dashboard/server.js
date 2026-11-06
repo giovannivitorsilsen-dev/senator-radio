@@ -6,6 +6,7 @@ const crypto=require('node:crypto');
 const {createStatusMonitor}=require('../core/status');
 const {createJavaVerifier}=require('./java-verifier');
 const {createResourceCatalog}=require('../core/resource-catalog');
+const {createRuntimeStatusReader}=require('../core/runtime-status');
 
 const page=fs.readFileSync(path.join(__dirname,'public','index.html'));
 const script=fs.readFileSync(path.join(__dirname,'public','app.js'));
@@ -16,7 +17,7 @@ const headers={
   'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 };
 const loopback=address=>address==='127.0.0.1'||address==='::1'||address==='::ffff:127.0.0.1';
-function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=createJavaVerifier(),catalog=createResourceCatalog(),now=Date.now}={}) {
+function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=createJavaVerifier(),catalog=createResourceCatalog(),runtimeReader=createRuntimeStatusReader(),now=Date.now}={}) {
   if(!Number.isInteger(targetPort)||targetPort<1||targetPort>65535)throw new RangeError('Invalid game port');
   const sessions=new Map();
   let attempts=[];
@@ -86,10 +87,11 @@ function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=cre
         // Permissions and token expiry are rechecked on every protected request.
         if(!(await verify(session.token))){sessions.delete(key);reply(res,403,{error:'Access revoked'});return;}
         if(pathname==='/api/resources'){
-          reply(res,200,{mode:'catalog-only',live:false,resources:catalog.list()});
+          const observed=runtimeReader.read(catalog.list());
+          reply(res,200,{mode:observed.live?'runtime-observed':'catalog-only',...observed});
         }else{
           const game=await monitor.status(targetPort);
-          reply(res,200,{dashboard:'LifeAdmin v0.4',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game,
+          reply(res,200,{dashboard:'LifeAdmin v0.5',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game,
             adminProcess:{uptimeSeconds:Math.floor(process.uptime()),memoryRssMiB:Math.round(process.memoryUsage().rss/1048576)}});
         }
       }catch{reply(res,503,{error:'Status temporarily unavailable'});}
