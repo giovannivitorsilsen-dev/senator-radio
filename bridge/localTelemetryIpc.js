@@ -42,6 +42,7 @@ function createTelemetryIpcServer({socketPath,key,getSnapshot}={}) {
   socket.on('error',()=>{});
  });
  server.maxConnections=8;
+ let boundInode=null;
  return {
   server,
   listen(){
@@ -57,7 +58,11 @@ function createTelemetryIpcServer({socketPath,key,getSnapshot}={}) {
     const failure=error=>{server.removeListener('listening',ready);reject(error);};
     const ready=()=>{
      server.removeListener('error',failure);
-     try{fs.chmodSync(socketPath,0o600);resolve(server);}
+     try{
+      fs.chmodSync(socketPath,0o600);
+      boundInode=fs.statSync(socketPath).ino;
+      resolve(server);
+     }
      catch(error){server.close();reject(error);}
     };
     server.once('error',failure);
@@ -71,7 +76,10 @@ function createTelemetryIpcServer({socketPath,key,getSnapshot}={}) {
     if(!server.listening){resolve();return;}
     server.close(()=>{
      // This socket was created by this process; best-effort cleanup.
-     try{fs.unlinkSync(socketPath);}catch{}
+     try{
+      if(boundInode!==null&&fs.statSync(socketPath).ino===boundInode)
+       fs.unlinkSync(socketPath);
+     }catch{}
      resolve();
     });
    });
