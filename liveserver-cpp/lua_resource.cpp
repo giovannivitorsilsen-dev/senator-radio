@@ -68,6 +68,30 @@ int LuaResource::logMessage(lua_State* L) {
   if (self->logs_.size() < 128) self->logs_.emplace_back(value, length > 256 ? 256 : length);
   return 0;
 }
+int LuaResource::hasCapability(lua_State* L) {
+  auto* self=context(L);
+  size_t length=0;
+  const char* raw=luaL_checklstring(L,1,&length);
+  if(length>64){lua_pushboolean(L,0);return 1;}
+  const std::string cap(raw,length);
+  lua_pushboolean(L,self->permissions_ && self->permissions_->has(self->name_,cap));
+  return 1;
+}
+int LuaResource::requestAction(lua_State* L) {
+  auto* self=context(L);
+  size_t actionLength=0,messageLength=0;
+  const char* action=luaL_checklstring(L,1,&actionLength);
+  const char* message=luaL_checklstring(L,2,&messageLength);
+  if(actionLength>64 || messageLength>160){lua_pushboolean(L,0);return 1;}
+  const std::string capability(action,actionLength);
+  // Only demo notice logging is implemented. Staff/economy/vehicle APIs are absent.
+  if(capability!="chat.notice" || !self->permissions_ ||
+     !self->permissions_->has(self->name_,capability)){
+    lua_pushboolean(L,0);return 1;
+  }
+  if(self->logs_.size()<128)self->logs_.emplace_back(message,messageLength);
+  lua_pushboolean(L,1);return 1;
+}
 LuaResource::LuaResource(std::string name, const std::string& source, std::size_t memoryLimit,
                          const LifePermissions* permissions)
   : name_(std::move(name)), permissions_(permissions), memoryLimit_(memoryLimit) {
