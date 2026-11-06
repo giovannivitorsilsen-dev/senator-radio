@@ -10,7 +10,8 @@ let nextId=1;
 const luaBridge=createLuaBridge({
   enabled:process.env.LIFE_LUA_BRIDGE==='1',
   binary:process.env.LIFE_LUA_BRIDGE_BIN,
-  script:process.env.LIFE_LUA_SCRIPT
+  script:process.env.LIFE_LUA_SCRIPT,
+  statusFile:process.env.LIFE_RESOURCE_STATUS_FILE
 });
 process.on('exit',()=>luaBridge.close());
 const server=http.createServer((req,res)=>{
