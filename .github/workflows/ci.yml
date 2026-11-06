@@ -1,7 +1,8 @@
-name: PROJECT LIFE RP Multi-Platform Checks
+name: PROJECT LIFE RP Core and Database CI
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 jobs:
   linux-core:
@@ -9,37 +10,75 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+        with: {node-version: '22'}
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Install browser demo
-        run: npm install --no-audit --no-fund
-      - name: Node multiplayer tests
-        run: npm test
-      - name: Compile Java auth and persistent core
+        with: {distribution: temurin, java-version: '17'}
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - name: Java compilation + unit tests
         run: |
           mkdir -p core-java/out
           javac -d core-java/out core-java/src/main/java/rp/core/*.java core-java/src/test/java/rp/core/*.java
           java -ea -cp core-java/out rp.core.LifeCoreTest
           java -ea -cp core-java/out rp.core.AccountAuthTest
           java -ea -cp core-java/out rp.core.CommunityJdbcTest
-      - name: Native C and C++ tests
+      - name: Native C and C++
         run: |
           cd native
           cc -c -std=c11 src/life_motion.c -o motion.o
           c++ -std=c++17 examples/main.cpp motion.o -lm -o motion_test
           ./motion_test
-      - name: Docker build
-        run: docker build -t project-life-rp-smoke .
+      - run: docker build -t project-life-rp-test .
   windows-node:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+        with: {node-version: '22'}
       - run: npm install --no-audit --no-fund
       - run: npm test
+  jdbc-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [postgresql, mariadb]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: life_ci
+          POSTGRES_PASSWORD: life_ci_test_only
+          POSTGRES_DB: life_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U life_ci -d life_ci" --health-interval 5s --health-timeout 5s --health-retries 12
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_USER: life_ci
+          MARIADB_PASSWORD: life_ci_test_only
+          MARIADB_DATABASE: life_ci
+          MARIADB_ROOT_PASSWORD: root_ci_test_only
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized" --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17', cache: maven, cache-dependency-path: core-java/pom.xml}
+      - name: Compile and download JDBC drivers
+        run: |
+          mvn -B -f core-java/pom.xml test-compile dependency:copy-dependencies -DoutputDirectory=target/dependency
+      - name: JDBC integration: ${{ matrix.dialect }}
+        env:
+          LIFE_DB_DIALECT: ${{ matrix.dialect }}
+          LIFE_JDBC_USER: life_ci
+          LIFE_JDBC_PASSWORD: life_ci_test_only
+        run: |
+          if [ "$LIFE_DB_DIALECT" = "postgresql" ]; then
+            export LIFE_JDBC_URL="jdbc:postgresql://127.0.0.1:5432/life_ci"
+          else
+            export LIFE_JDBC_URL="jdbc:mariadb://127.0.0.1:3306/life_ci"
+          fi
+          java -ea -cp "core-java/target/classes:core-java/target/test-classes:core-java/target/dependency/*" rp.core.JdbcIntegrationTest
