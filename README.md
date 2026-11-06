@@ -77,3 +77,9 @@ La dashboard locale è ora **protetta da un verificatore Java obbligatorio**. No
 La password dell'account non viene inserita nella dashboard. Esiste una CLI Java per creare un token di sessione da un **account già registrato**, solo tramite un terminale interattivo fidato. Non sono ancora disponibili MFA, login web con password, gestioni staff remote, restart server, o controlli amministrativi del gioco.
 
 Vedi [docs/LIFEADMIN_V03.md](docs/LIFEADMIN_V03.md) per preparare JDBC, avviare `npm run admin`, ottenere il token locale e comprendere i limiti. **Non pubblicare la porta 4101 o usarla tramite tunnel Codespaces.**
+
+## LifeAdmin v0.4 — risorse dichiarate e stato del processo
+
+La dashboard autenticata ora mostra le risorse **dichiarate** in `lifeadmin/resources.json` (nomi e dipendenze) e uptime/RAM **del processo amministrativo**, senza fingere di conoscere lo stato reale delle VM Lua. La nuova route `/api/resources` richiede la stessa sessione Java e il permesso community `ADMIN_VIEW` della diagnostica.
+
+Il verificatore Java ha limiti di concorrenza e timeout. Prima di usare il pannello serve configurare Java/JDBC e un account staff autorizzato. Nessuna porta amministrativa deve essere resa pubblica. Dettagli: [docs/LIFEADMIN_V04.md](docs/LIFEADMIN_V04.md).
