@@ -32,13 +32,23 @@ function createLuaBridge(options={}) {
   let running=true,buffer='',confirmed=false,gracefulStop=false;
   const known=new Map();
   let lastError=null;
+  const startedAt=Date.now();
+  let lastReplyAt=startedAt;
+  let pingsSent=0,eventsAccepted=0,errorCount=0;
+  const maxSilentMs=options.maxSilentMs??10000;
+  if(!Number.isInteger(maxSilentMs)||maxSilentMs<1000||maxSilentMs>60000 ||
+     (options.pingIntervalMs!==undefined && (!Number.isInteger(options.pingIntervalMs)||options.pingIntervalMs<100||options.pingIntervalMs>maxSilentMs)))
+    throw new RangeError('Invalid local supervisor timeout');
   const publish=(state)=>{
     if(!statusFile)return;
     const result={
       schema:1,source:'cpp-lua-bridge',observedAt:Date.now(),
       processState:state,
       resources:state==='running'||state==='stopped'?[...known.values()]:[],
-      error:lastError
+      error:lastError,
+      supervisor:{uptimeSeconds:Math.max(0,Math.floor((Date.now()-startedAt)/1000)),
+        pingsSent,eventsAccepted,errorCount,
+        lastReplyAt:running?lastReplyAt:null}
     };
     const tmp=statusFile+'.tmp-'+process.pid;
     try {
@@ -57,7 +67,12 @@ function createLuaBridge(options={}) {
       const line=buffer.slice(0,pos).trim();
       buffer=buffer.slice(pos+1);
       const match=/^RESOURCE ([A-Za-z0-9_-]{1,64}) (STARTED|STOPPED)(?: ([A-Za-z0-9_,-]{1,1200}))?$/.exec(line);
+      if(line==='PONG'){
+        lastReplyAt=Date.now();
+        continue;
+      }
       if(match) {
+        lastReplyAt=Date.now();
         const [,name,state,deps='']=match;
         const dependencies=deps?deps.split(','):[];
         if(dependencies.length<=16&&dependencies.every(v=>/^[A-Za-z0-9_-]{1,64}$/.test(v))){
@@ -67,7 +82,9 @@ function createLuaBridge(options={}) {
           publish(gracefulStop?'stopped':'running');
         }
       }else if(/^ERROR (runtime startup|runtime callback)$/.test(line)){
+        lastReplyAt=Date.now();
         lastError=line.slice(6);
+        errorCount++;
         if(lastError==='runtime startup') {
           confirmed=false;
           publish('unavailable');
@@ -75,15 +92,19 @@ function createLuaBridge(options={}) {
           publish('running');
         }
       }
-      // PONG / EVENT_OK are deliberately not interpreted as resource state.
+      if(line==='EVENT_OK')eventsAccepted++;
     }
   };
   if(child.stdout)child.stdout.on('data',part=>consume(String(part)));
-  const stopped=()=>{
+  const stopped=(reason='unavailable')=>{
     if(!running)return;
     running=false;
     clearInterval(timer);
     confirmed=false;
+    if(reason==='heartbeat-timeout'){
+      lastError='runtime heartbeat timeout';
+      errorCount++;
+    }
     publish(gracefulStop?'stopped':'unavailable');
   };
   child.on('error',stopped);
@@ -92,8 +113,13 @@ function createLuaBridge(options={}) {
   if(child.stderr)child.stderr.on('data',()=>{});
   const timer=setInterval(()=>{
     if(!running||!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return;
-    try{child.stdin.write('PING\n');}catch{stopped();}
-  },3000);
+    if(Date.now()-lastReplyAt>maxSilentMs){
+      stopped('heartbeat-timeout');
+      try{child.kill('SIGKILL');}catch{}
+      return;
+    }
+    try{pingsSent++;child.stdin.write('PING\n');}catch{stopped();}
+  },options.pingIntervalMs??3000);
   timer.unref?.();
 
   return {
