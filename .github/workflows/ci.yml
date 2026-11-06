@@ -15,23 +15,25 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install browser-demo dependencies
+      - name: Install browser demo
         run: npm install --no-audit --no-fund
-      - name: Test WebSocket multiplayer
+      - name: Node multiplayer tests
         run: npm test
-      - name: Test Java staff/supporter policies
+      - name: Compile Java auth and persistent core
         run: |
           mkdir -p core-java/out
-          javac -d core-java/out core-java/src/main/java/rp/core/LifeCore.java core-java/src/test/java/rp/core/LifeCoreTest.java
+          javac -d core-java/out core-java/src/main/java/rp/core/*.java core-java/src/test/java/rp/core/*.java
           java -ea -cp core-java/out rp.core.LifeCoreTest
-      - name: Test C/C++ ABI
+          java -ea -cp core-java/out rp.core.AccountAuthTest
+          java -ea -cp core-java/out rp.core.CommunityJdbcTest
+      - name: Native C and C++ tests
         run: |
           cd native
           cc -c -std=c11 src/life_motion.c -o motion.o
           c++ -std=c++17 examples/main.cpp motion.o -lm -o motion_test
           ./motion_test
-      - name: Docker image build
-        run: docker build -t life-rp-smoke .
+      - name: Docker build
+        run: docker build -t project-life-rp-smoke .
   windows-node:
     runs-on: windows-latest
     steps:
