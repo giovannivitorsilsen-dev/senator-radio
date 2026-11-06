@@ -53,3 +53,19 @@ npm test
 Il monitor controlla esclusivamente `127.0.0.1:3000` (porta configurabile tramite `LIFE_ADMIN_TARGET_PORT`) e non esegue comandi amministrativi né espone una dashboard web. È un primo componente tecnico, **non** il txAdmin completo.
 
 Modulo e test: `lifeadmin/` e `tests/lifeadmin.test.js`; audit licenze, moduli da riutilizzare e limiti: [docs/TXADMIN_REUSE_AUDIT.md](docs/TXADMIN_REUSE_AUDIT.md).
+
+## LifeAdmin v0.2 — dashboard grafica locale
+
+È disponibile una prima dashboard di sola lettura **separata dalla porta del gioco**:
+
+```sh
+npm start
+# In un secondo terminale PC:
+npm run admin
+```
+
+Apri **http://127.0.0.1:4101** sul PC che esegue LifeAdmin. Mostra la risposta HTTP della demo, la latenza locale e l'ultimo controllo, con aggiornamento automatico. Per un controllo da console: `npm run admin:status`.
+
+**Non inoltrare o rendere pubblica la porta 4101 su Codespaces.** La dashboard non ha ancora autenticazione né controlli amministrativi: sono ammesse solo letture su loopback. I dati non rappresentano lo stato del runtime C++/Lua o del database Java.
+
+Dettagli e limitazioni: [docs/LIFEADMIN_V02.md](docs/LIFEADMIN_V02.md).
