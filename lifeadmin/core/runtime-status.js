@@ -34,8 +34,7 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
             dependencies:[],source:'cpp-lua-bridge'});
         }
         const live=snapshot.processState==='running';
-        const observed=live?active.map(row=>row):[];
-        const known=new Set(observed.map(row=>row.name));
+        const observed=(live||snapshot.processState==='stopped')?active:[];
         return {
           live,reason:live?'confirmed':'bridge-'+snapshot.processState,
           observedAt:snapshot.observedAt,
