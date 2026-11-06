@@ -97,3 +97,9 @@ Compilazione, configurazione e limiti: [docs/LIFEADMIN_V05.md](docs/LIFEADMIN_V0
 Il bridge locale C++/Lua ora accetta fino a 15 risorse aggiuntive dichiarate dall'operatore tramite `LIFE_LUA_EXTRA_RESOURCES`, con dipendenze e stati separati. La dashboard LifeAdmin, dietro LifeAccount e permesso community `ADMIN_VIEW`, interpreta conferme recenti di avvio/arresto e categorie generiche di errore; gli script di terzi e i comandi remoti restano disabilitati.
 
 Il protocollo è ancora **sperimentale e circoscritto al bridge della demo**, non all'intero server RP multi-community. Vedi [docs/LIFEADMIN_V06.md](docs/LIFEADMIN_V06.md) per configurazione e limiti. Le nuove verifiche C++ e Node sono da confermare in GitHub Actions.
+
+## LifeAdmin v0.7 — supervisore Lua locale
+
+Il bridge C++/Lua della demo è monitorato da un watchdog: senza risposta verificata entro 10 secondi lo stato passa a non disponibile e il processo bloccato viene terminato, senza riavvio automatico. La dashboard amministrativa autenticata mostra uptime, PING inviati, eventi confermati ed errori generici del bridge, non dell'intero server di gioco.
+
+È inoltre disponibile un journal locale JSONL **opzionale**, limitato alle categorie d'evento non sensibili, configurato via `LIFE_SUPERVISOR_AUDIT_FILE`. Nessuna operazione staff o restart è abilitata via browser. I test sono in `tests/lifeadmin-supervisor*.test.js`; dettagli in [docs/LIFEADMIN_V07.md](docs/LIFEADMIN_V07.md).
