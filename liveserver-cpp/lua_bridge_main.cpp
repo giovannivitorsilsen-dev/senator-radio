@@ -27,12 +27,12 @@ int main(int argc,char** argv) {
     life::LifeRuntime runtime;
     runtime.add("welcome",{},std::move(script),{"rp:hello"});
     runtime.start("welcome");
-    std::cout<<"RESOURCE welcome "<<(runtime.running("welcome")?"STARTED":"STOPPED")<<"\\n"<<std::flush;
+    std::cout<<"RESOURCE welcome "<<(runtime.running("welcome")?"STARTED":"STOPPED")<<"\n"<<std::flush;
     std::string line;
     while(std::getline(std::cin,line)) {
       if(line=="PING") {
         std::cout<<"PONG\\n";
-        std::cout<<"RESOURCE welcome "<<(runtime.running("welcome")?"STARTED":"STOPPED")<<"\\n"<<std::flush;
+        std::cout<<"RESOURCE welcome "<<(runtime.running("welcome")?"STARTED":"STOPPED")<<"\n"<<std::flush;
         continue;
       }
       if(line.size()<7 || line.size()>28 || line.compare(0,6,"HELLO ")!=0) continue;
