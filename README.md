@@ -91,3 +91,9 @@ Il bridge C++/Lua della demo produce ora un messaggio di stato `RESOURCE welcome
 L'interfaccia distingue le conferme recenti da file scaduti (oltre 10 s), mancanti o non validi; non presenta come avviate le risorse presenti soltanto nel catalogo. È osservata **solo la risorsa `welcome` del bridge sperimentale**, non l'intero motore FXServer-like. Nessun comando remoto di avvio/arresto è stato aggiunto.
 
 Compilazione, configurazione e limiti: [docs/LIFEADMIN_V05.md](docs/LIFEADMIN_V05.md). Non esporre la porta amministrativa 4101; il pannello rimane PC-only.
+
+## LifeAdmin v0.6 — telemetria di più risorse Lua
+
+Il bridge locale C++/Lua ora accetta fino a 15 risorse aggiuntive dichiarate dall'operatore tramite `LIFE_LUA_EXTRA_RESOURCES`, con dipendenze e stati separati. La dashboard LifeAdmin, dietro LifeAccount e permesso community `ADMIN_VIEW`, interpreta conferme recenti di avvio/arresto e categorie generiche di errore; gli script di terzi e i comandi remoti restano disabilitati.
+
+Il protocollo è ancora **sperimentale e circoscritto al bridge della demo**, non all'intero server RP multi-community. Vedi [docs/LIFEADMIN_V06.md](docs/LIFEADMIN_V06.md) per configurazione e limiti. Le nuove verifiche C++ e Node sono da confermare in GitHub Actions.
