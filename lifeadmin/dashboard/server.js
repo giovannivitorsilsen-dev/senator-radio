@@ -92,7 +92,7 @@ function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=cre
           reply(res,200,{mode:observed.live?'runtime-observed':'catalog-only',...observed});
         }else{
           const game=await monitor.status(targetPort);
-          reply(res,200,{dashboard:'LifeAdmin v0.5',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game,
+          reply(res,200,{dashboard:'LifeAdmin v0.9',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game,
             adminProcess:{uptimeSeconds:Math.floor(process.uptime()),memoryRssMiB:Math.round(process.memoryUsage().rss/1048576)}});
         }
       }catch{reply(res,503,{error:'Status temporarily unavailable'});}
