@@ -1,0 +1,10 @@
+node_modules
+.git
+.github
+core-java
+native
+scripts-lua
+docs
+deploy
+*.log
+.env
