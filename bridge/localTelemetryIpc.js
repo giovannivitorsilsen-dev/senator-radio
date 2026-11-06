@@ -41,10 +41,19 @@ function createTelemetryIpcServer({socketPath,key,getSnapshot}={}) {
   });
   socket.on('error',()=>{});
  });
+ server.maxConnections=8;
  return {
   server,
   listen(){
    return new Promise((resolve,reject)=>{
+    try {
+     const directory=fs.statSync(path.dirname(socketPath));
+     if(!directory.isDirectory()||(directory.mode&0o077)!==0||
+        (typeof process.getuid==='function'&&directory.uid!==process.getuid()))
+       throw Error('IPC directory must be owned by operator and mode 0700');
+     if(Buffer.byteLength(socketPath)>100)throw Error('IPC socket path too long');
+     if(fs.existsSync(socketPath))throw Error('IPC socket already exists');
+    }catch(error){reject(error);return;}
     const failure=error=>{server.removeListener('listening',ready);reject(error);};
     const ready=()=>{
      server.removeListener('error',failure);
