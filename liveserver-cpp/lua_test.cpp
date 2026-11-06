@@ -33,5 +33,21 @@ int main() {
   host.add("memory", {}, "local blob = string.rep('x', 10000000)");
   expectFailure([&]{ host.start("memory"); });
   assert(!host.running("memory"));
+  host.add("limited", {},
+    "assert(not HasCapability('chat.notice'))\n"
+    "assert(not RequestAction('chat.notice','blocked'))\n"
+    "assert(not RequestAction('staff.ban','player'))");
+  host.start("limited");
+  assert(host.logs("limited").empty());
+  host.add("allowed", {},
+    "assert(HasCapability('chat.notice'))\n"
+    "assert(not HasCapability('staff.ban'))\n"
+    "assert(RequestAction('chat.notice','hello from Lua'))\n"
+    "assert(not RequestAction('staff.ban','player'))",
+    {"chat.notice"});
+  host.start("allowed");
+  assert(host.logs("allowed").size()==1);
+  assert(host.logs("allowed").at(0)=="hello from Lua");
+  expectFailure([&]{ host.add("wildcard",{}, "Log('bad')", {"chat.*"}); });
   std::cout << "LifeServer Lua integration tests PASS\n";
 }
