@@ -1,10 +1,13 @@
 'use strict';
 const fs=require('node:fs');
 const path=require('node:path');
+const {validKey,verify}=require('../../bridge/telemetryAuth');
 
 const validName=name=>typeof name==='string'&&/^[A-Za-z0-9_-]{1,64}$/.test(name);
 function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
-  now=Date.now,readFile=fs.readFileSync,stat=fs.statSync,maxAgeMs=10000}={}) {
+  now=Date.now,readFile=fs.readFileSync,stat=fs.statSync,maxAgeMs=10000,
+  hmacKey=process.env.LIFE_TELEMETRY_HMAC_KEY}={}) {
+  if(hmacKey!==undefined&&!validKey(hmacKey))throw new Error('Invalid LifeAdmin telemetry key');
   const configured=typeof file==='string'&&path.isAbsolute(file);
   return {
     read(catalogRows=[]) {
@@ -15,6 +18,7 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
       try {
         if(stat(file).size>32768)throw Error('invalid size');
         const snapshot=JSON.parse(readFile(file,'utf8'));
+        if(hmacKey&&!verify(snapshot,hmacKey))throw Error('telemetry authentication failed');
         if(snapshot.schema!==1||snapshot.source!=='cpp-lua-bridge'||
            !['running','stopped','unavailable'].includes(snapshot.processState)||
            !Number.isSafeInteger(snapshot.observedAt)||
