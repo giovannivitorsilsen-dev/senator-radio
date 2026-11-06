@@ -34,6 +34,11 @@ async function refresh(){
       info.textContent=catalog.live?'Stato confermato dal runtime C++ · aggiornamento recente':
         'Stato runtime non verificato ('+catalog.reason+'): vengono mostrati solo dati di configurazione';
       container.append(info);
+      if(catalog.error){
+        const warning=document.createElement('p');
+        warning.textContent='Segnalazione runtime: '+catalog.error;
+        container.append(warning);
+      }
       for(const item of catalog.resources){
         const div=document.createElement('div');
         div.textContent=item.name+' · '+(item.source==='cpp-lua-bridge'?('Lua: '+item.status):'configurata; stato runtime sconosciuto')+
