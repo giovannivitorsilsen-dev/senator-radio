@@ -1,0 +1,21 @@
+name: LifeServer Lua 5.4 checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  lua-runtime-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.4 development library
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y liblua5.4-dev
+      - name: Build C++ Lua runtime
+        run: |
+          cmake -S liveserver-cpp -B liveserver-cpp/build-lua -DLIFE_ENABLE_LUA=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build liveserver-cpp/build-lua --parallel 2
+      - name: Run resource and Lua tests
+        run: ctest --test-dir liveserver-cpp/build-lua --output-on-failure
