@@ -45,6 +45,22 @@ test('C++ stdout resource frame reaches local atomic telemetry, never from clien
  assert.equal(stopped.resources.some(r=>r.status==='started'),false);
  bridge.close();
 });
+test('a graceful C++ STOPPED frame is displayed as stopped, not live',t=>{
+ const file=fixture(t);
+ const child=new EventEmitter();
+ child.stdout=new EventEmitter();child.stderr=new EventEmitter();child.stdin=new EventEmitter();
+ child.stdin.destroyed=false;child.stdin.writableNeedDrain=false;child.stdin.write=()=>true;
+ child.stdin.end=()=>{};child.kill=()=>{};
+ const bridge=createLuaBridge({enabled:true,binary:'/trusted/bin',script:'/trusted/script',
+   statusFile:file,spawn:()=>child});
+ child.stdout.emit('data','RESOURCE welcome STARTED\\n');
+ child.stdout.emit('data','RESOURCE welcome STOPPED\\n');
+ child.emit('exit',0);
+ const snap=createRuntimeStatusReader({file}).read(catalog());
+ assert.equal(snap.live,false);
+ assert.equal(snap.resources.find(r=>r.name==='welcome').status,'stopped');
+ bridge.close();
+});
 test('stale, missing and untrusted telemetry never claims resource started',t=>{
  const file=fixture(t);
  const reader=createRuntimeStatusReader({file,now:()=>20000,maxAgeMs:10000});
