@@ -15,3 +15,14 @@ La mappa Demo City di Unity **non è inclusa**. Non caricare password, chiavi o 
 
 ## Risorse
 Per sostituire questa demo con la Alpha 1.1 completa, bisogna caricare i sorgenti dello ZIP `project_life_rp_alpha_11_pc_3d_editor.zip` nel repository. Il file ZIP rimane disponibile nella conversazione.
+
+## LifeCommunity JDBC — sviluppo del 6 novembre 2026
+
+Il progetto contiene ora la prima persistenza JDBC del nucleo RP (codice **non ancora collegato al server multiplayer Node.js**):
+- `core-java/src/main/java/rp/core/AccountAuth.java` — autenticazione e sessioni.
+- `core-java/src/main/java/rp/core/CommunityJdbc.java` — comunità, membri, permessi staff e benefici supporter personali.
+- `core-java/src/main/java/rp/core/DriverManagerDataSource.java` — collegamento JDBC elementare per test.
+- `database/postgresql/` e `database/mariadb/` — migrazioni `001`, `002`, `003`, da applicare in quest'ordine.
+- `docs/ACCOUNT_PERSISTENCE.md` — setup e limitazioni.
+
+L'implementazione è **sperimentale**: non esistono ancora endpoint account per il client, gateway autenticato, integrazione pagamenti verificata o test JDBC confermati su database reali. Non usare questo codice come server pubblico a pagamento.
