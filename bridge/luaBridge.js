@@ -2,6 +2,7 @@
 const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
+const {createSupervisorJournal}=require('./supervisorJournal');
 
 const safeDisplayName=(name)=>{
   if(typeof name!=='string')return null;
@@ -29,6 +30,7 @@ function createLuaBridge(options={}) {
   if(!Number.isInteger(maxSilentMs)||maxSilentMs<1000||maxSilentMs>60000 ||
      (options.pingIntervalMs!==undefined && (!Number.isInteger(options.pingIntervalMs)||options.pingIntervalMs<100||options.pingIntervalMs>maxSilentMs)))
     throw new RangeError('Invalid local supervisor timeout');
+  const journal=createSupervisorJournal({file:options.auditFile});
   const child=(options.spawn||spawn)(binary,[script,...extraResources],{
     cwd:options.cwd||path.resolve(__dirname,'..'),
     shell:false,stdio:['pipe','pipe','pipe'],windowsHide:true
@@ -76,7 +78,10 @@ function createLuaBridge(options={}) {
         const [,name,state,deps='']=match;
         const dependencies=deps?deps.split(','):[];
         if(dependencies.length<=16&&dependencies.every(v=>/^[A-Za-z0-9_-]{1,64}$/.test(v))){
+          const previous=known.get(name);
           known.set(name,{name,status:state==='STARTED'?'started':'stopped',dependencies});
+          if(!previous||previous.status!==(state==='STARTED'?'started':'stopped'))
+            journal.record(state==='STARTED'?'resource-started':'resource-stopped',name);
           if(name==='welcome')confirmed=state==='STARTED';
           gracefulStop=[...known.values()].every(r=>r.status==='stopped');
           publish(gracefulStop?'stopped':'running');
@@ -85,6 +90,7 @@ function createLuaBridge(options={}) {
         lastReplyAt=Date.now();
         lastError=line.slice(6);
         errorCount++;
+        journal.record('runtime-error');
         if(lastError==='runtime startup') {
           confirmed=false;
           publish('unavailable');
@@ -104,7 +110,8 @@ function createLuaBridge(options={}) {
     if(reason==='heartbeat-timeout'){
       lastError='runtime heartbeat timeout';
       errorCount++;
-    }
+      journal.record('heartbeat-timeout');
+    } else if(!gracefulStop)journal.record('bridge-unavailable');
     publish(gracefulStop?'stopped':'unavailable');
   };
   child.on('error',stopped);
