@@ -3,6 +3,7 @@ const {spawn}=require('node:child_process');
 const fs=require('node:fs');
 const path=require('node:path');
 const {createSupervisorJournal}=require('./supervisorJournal');
+const {validKey,sign}=require('./telemetryAuth');
 
 const safeDisplayName=(name)=>{
   if(typeof name!=='string')return null;
@@ -19,6 +20,8 @@ function createLuaBridge(options={}) {
     throw new Error('Lua bridge requires trusted binary and script paths');
 
   const statusFile=options.statusFile;
+  const hmacKey=options.hmacKey;
+  if(hmacKey!==undefined&&!validKey(hmacKey))throw new Error('Invalid telemetry key');
   const extraResources=options.extraResources||[];
   if(!Array.isArray(extraResources)||extraResources.length>15||
      !extraResources.every(v=>typeof v==='string'&&v.length<=512&&
@@ -54,7 +57,7 @@ function createLuaBridge(options={}) {
     };
     const tmp=statusFile+'.tmp-'+process.pid;
     try {
-      fs.writeFileSync(tmp,JSON.stringify(result),{encoding:'utf8',mode:0o600,flag:'w'});
+      fs.writeFileSync(tmp,JSON.stringify(hmacKey?sign(result,hmacKey):result),{encoding:'utf8',mode:0o600,flag:'w'});
       fs.renameSync(tmp,statusFile);
     } catch {
       // Telemetry is optional. A failed write cannot break game connections.
