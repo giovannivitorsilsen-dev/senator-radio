@@ -42,10 +42,10 @@ function createLuaBridge(options={}) {
   const known=new Map();
   let lastError=null;
   const startedAt=Date.now();
+  let latestSnapshot=null;
   let lastReplyAt=startedAt;
   let pingsSent=0,eventsAccepted=0,errorCount=0;
   const publish=(state)=>{
-    if(!statusFile)return;
     const result={
       schema:1,source:'cpp-lua-bridge',observedAt:Date.now(),
       processState:state,
@@ -55,6 +55,8 @@ function createLuaBridge(options={}) {
         pingsSent,eventsAccepted,errorCount,
         lastReplyAt:running?lastReplyAt:null}
     };
+    latestSnapshot=result;
+    if(!statusFile)return;
     const tmp=statusFile+'.tmp-'+process.pid;
     try {
       fs.writeFileSync(tmp,JSON.stringify(hmacKey?sign(result,hmacKey):result),{encoding:'utf8',mode:0o600,flag:'w'});
@@ -135,6 +137,7 @@ function createLuaBridge(options={}) {
 
   return {
     enabled:true,
+    snapshot(){return latestSnapshot?structuredClone(latestSnapshot):null;},
     hello(displayName) {
       const safe=safeDisplayName(displayName);
       if(!running||!safe||!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return false;
