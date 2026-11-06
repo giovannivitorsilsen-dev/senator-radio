@@ -51,7 +51,7 @@ function createLuaBridge(options={}) {
   };
   const consume=(text)=>{
     buffer+=text;
-    if(buffer.length>4096){buffer='';return;}
+    if(buffer.length>32768){buffer='';return;}
     let pos;
     while((pos=buffer.indexOf('\n'))>=0) {
       const line=buffer.slice(0,pos).trim();
