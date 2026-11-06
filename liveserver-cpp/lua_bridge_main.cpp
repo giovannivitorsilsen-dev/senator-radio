@@ -4,6 +4,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 // Dedicated local game-event bridge, NOT the administrative LifeConsole.
 // Reads only HELLO <safe player display name> from inherited stdin.
