@@ -1,5 +1,6 @@
 'use strict';
 const {spawn}=require('node:child_process');
+const fs=require('node:fs');
 const path=require('node:path');
 
 const safeDisplayName=(name)=>{
@@ -8,42 +9,83 @@ const safeDisplayName=(name)=>{
   return normalized || null;
 };
 
-// The sole protocol emitted here is HELLO <sanitized display name>.
-// In particular, client-provided data can NEVER become LifeConsole commands.
+// Trusted local child process. Never accepts game-originated console commands.
+// A RESOURCE frame is accepted exclusively from C++ stdout, not from players.
 function createLuaBridge(options={}) {
-  const enabled=options.enabled===true;
-  if(!enabled)return {enabled:false,hello:()=>false,close:()=>{}};
-  const binary=options.binary;
-  const script=options.script;
+  if(options.enabled!==true)return {enabled:false,hello:()=>false,close:()=>{}};
+  const binary=options.binary,script=options.script;
   if(typeof binary!=='string'||!binary||typeof script!=='string'||!script)
     throw new Error('Lua bridge requires trusted binary and script paths');
+
+  const statusFile=options.statusFile;
+  if(statusFile!==undefined && (typeof statusFile!=='string'||!path.isAbsolute(statusFile)))
+    throw new Error('LIFE_RESOURCE_STATUS_FILE must be an absolute local path');
   const child=(options.spawn||spawn)(binary,[script],{
     cwd:options.cwd||path.resolve(__dirname,'..'),
-    shell:false,
-    stdio:['pipe','ignore','pipe'],
-    windowsHide:true
+    shell:false,stdio:['pipe','pipe','pipe'],windowsHide:true
   });
-  let running=true;
-  child.on('error',()=>{running=false;});
-  child.on('exit',()=>{running=false;});
-  // A failed child or unexpected stderr must never crash the game demo.
-  if(child.stdin)child.stdin.on('error',()=>{running=false;});
+  let running=true,buffer='',confirmed=false;
+  const publish=(state)=>{
+    if(!statusFile)return;
+    const result={
+      schema:1,source:'cpp-lua-bridge',observedAt:Date.now(),
+      processState:state,
+      resources:state==='running'&&confirmed?[{name:'welcome',status:'started'}]:[]
+    };
+    const tmp=statusFile+'.tmp-'+process.pid;
+    try {
+      fs.writeFileSync(tmp,JSON.stringify(result),{encoding:'utf8',mode:0o600,flag:'w'});
+      fs.renameSync(tmp,statusFile);
+    } catch {
+      // Telemetry is optional. A failed write cannot break game connections.
+      try{fs.unlinkSync(tmp);}catch{}
+    }
+  };
+  const consume=(text)=>{
+    buffer+=text;
+    if(buffer.length>4096){buffer='';return;}
+    let pos;
+    while((pos=buffer.indexOf('\n'))>=0) {
+      const line=buffer.slice(0,pos).trim();
+      buffer=buffer.slice(pos+1);
+      if(line==='RESOURCE welcome STARTED') {
+        confirmed=true;
+        publish('running');
+      } else if(line==='RESOURCE welcome STOPPED') {
+        confirmed=false;
+        publish('stopped');
+      }
+      // PONG / EVENT_OK are deliberately not interpreted as resource state.
+    }
+  };
+  if(child.stdout)child.stdout.on('data',part=>consume(String(part)));
+  const stopped=()=>{
+    if(!running)return;
+    running=false;
+    clearInterval(timer);
+    confirmed=false;
+    publish('unavailable');
+  };
+  child.on('error',stopped);
+  child.on('exit',stopped);
+  if(child.stdin)child.stdin.on('error',stopped);
   if(child.stderr)child.stderr.on('data',()=>{});
+  const timer=setInterval(()=>{
+    if(!running||!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return;
+    try{child.stdin.write('PING\n');}catch{stopped();}
+  },3000);
+  timer.unref?.();
+
   return {
     enabled:true,
     hello(displayName) {
       const safe=safeDisplayName(displayName);
       if(!running||!safe||!child.stdin||child.stdin.destroyed||child.stdin.writableNeedDrain)return false;
-      try {
-        const ok=child.stdin.write('HELLO '+safe+'\n');
-        return ok;
-      } catch {
-        running=false;
-        return false;
-      }
+      try{return child.stdin.write('HELLO '+safe+'\n');}
+      catch {stopped();return false;}
     },
     close() {
-      running=false;
+      stopped();
       if(child.stdin&&!child.stdin.destroyed)child.stdin.end();
       if(typeof child.kill==='function')child.kill('SIGTERM');
     }
