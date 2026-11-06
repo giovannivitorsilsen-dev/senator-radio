@@ -22,6 +22,22 @@ async function refresh(){
     $('port').textContent=String(game.port);
     $('updated').textContent='Ultimo controllo: '+new Date(data.checkedAt).toLocaleTimeString('it-IT');
     $('message').textContent='Diagnostica aggiornata';
+    $('admin-process').textContent='Processo LifeAdmin: '+data.adminProcess.uptimeSeconds+
+      ' s · '+data.adminProcess.memoryRssMiB+' MiB RAM (non LifeServer)';
+    const catalogRes=await fetch('/api/resources',{cache:'no-store',credentials:'same-origin'});
+    if(catalogRes.ok) {
+      const catalog=await catalogRes.json();
+      const container=$('resources');
+      container.replaceChildren();
+      if(catalog.resources.length===0) container.textContent='Nessuna risorsa configurata';
+      for(const item of catalog.resources){
+        const div=document.createElement('div');
+        div.textContent=item.name+' · configurata, stato runtime sconosciuto'+
+          (item.dependencies.length?' · dipende da '+item.dependencies.join(', '):'');
+        div.style.padding='6px 0';
+        container.append(div);
+      }
+    }
   }catch {
     $('state').textContent='Non disponibile';$('state').className='value red';
     $('message').textContent='Impossibile leggere la diagnostica';
