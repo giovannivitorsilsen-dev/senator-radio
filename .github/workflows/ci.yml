@@ -22,8 +22,9 @@ jobs:
       - name: Test Java staff/supporter policies
         run: |
           mkdir -p core-java/out
-          javac -d core-java/out core-java/src/main/java/rp/core/LifeCore.java core-java/src/test/java/rp/core/LifeCoreTest.java
+          javac -d core-java/out core-java/src/main/java/rp/core/LifeCore.java core-java/src/test/java/rp/core/LifeCoreTest.java core-java/src/main/java/rp/core/AccountAuth.java core-java/src/test/java/rp/core/AccountAuthTest.java
           java -ea -cp core-java/out rp.core.LifeCoreTest
+          java -ea -cp core-java/out rp.core.AccountAuthTest
       - name: Test C/C++ ABI
         run: |
           cd native
