@@ -24,13 +24,14 @@ function createLuaBridge(options={}) {
     cwd:options.cwd||path.resolve(__dirname,'..'),
     shell:false,stdio:['pipe','pipe','pipe'],windowsHide:true
   });
-  let running=true,buffer='',confirmed=false;
+  let running=true,buffer='',confirmed=false,gracefulStop=false;
   const publish=(state)=>{
     if(!statusFile)return;
     const result={
       schema:1,source:'cpp-lua-bridge',observedAt:Date.now(),
       processState:state,
-      resources:state==='running'&&confirmed?[{name:'welcome',status:'started'}]:[]
+      resources:state==='running'&&confirmed?[{name:'welcome',status:'started'}]:
+        state==='stopped'?[{name:'welcome',status:'stopped'}]:[]
     };
     const tmp=statusFile+'.tmp-'+process.pid;
     try {
@@ -49,10 +50,12 @@ function createLuaBridge(options={}) {
       const line=buffer.slice(0,pos).trim();
       buffer=buffer.slice(pos+1);
       if(line==='RESOURCE welcome STARTED') {
+        gracefulStop=false;
         confirmed=true;
         publish('running');
       } else if(line==='RESOURCE welcome STOPPED') {
         confirmed=false;
+        gracefulStop=true;
         publish('stopped');
       }
       // PONG / EVENT_OK are deliberately not interpreted as resource state.
@@ -64,7 +67,7 @@ function createLuaBridge(options={}) {
     running=false;
     clearInterval(timer);
     confirmed=false;
-    publish('unavailable');
+    publish(gracefulStop?'stopped':'unavailable');
   };
   child.on('error',stopped);
   child.on('exit',stopped);
