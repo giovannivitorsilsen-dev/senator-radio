@@ -13,7 +13,7 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
       }));
       if(!configured)return {live:false,reason:'not-configured',resources:catalog};
       try {
-        if(stat(file).size>4096)throw Error('invalid size');
+        if(stat(file).size>32768)throw Error('invalid size');
         const snapshot=JSON.parse(readFile(file,'utf8'));
         if(snapshot.schema!==1||snapshot.source!=='cpp-lua-bridge'||
            !['running','stopped','unavailable'].includes(snapshot.processState)||
