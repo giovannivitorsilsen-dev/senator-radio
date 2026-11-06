@@ -27,5 +27,5 @@ jobs:
         env:
           LIFE_CPP_BRIDGE_BIN: ${{ github.workspace }}/liveserver-cpp/build-lua/lifeserver-lua-bridge
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm test
