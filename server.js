@@ -1,10 +1,18 @@
 const http=require('http');
 const fs=require('fs');
 const path=require('path');
+const {createLuaBridge}=require('./bridge/luaBridge');
 const {WebSocketServer,WebSocket}=require('ws');
 const port=Number(process.env.PORT||3000);
 const clients=new Map();
 let nextId=1;
+// Explicit opt-in. Only the trusted server selects the native binary and script.
+const luaBridge=createLuaBridge({
+  enabled:process.env.LIFE_LUA_BRIDGE==='1',
+  binary:process.env.LIFE_LUA_BRIDGE_BIN,
+  script:process.env.LIFE_LUA_SCRIPT
+});
+process.on('exit',()=>luaBridge.close());
 const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
   if(pathname!=='/'&&pathname!=='/index.html'){res.writeHead(404);return res.end('Not found');}
@@ -25,7 +33,12 @@ wss.on('connection',(ws)=>{
   ws.on('message',buf=>{
     let m;try{m=JSON.parse(buf.toString());}catch{return;}
     if(!m||typeof m!=='object')return;
-    if(m.type==='join'){p.name=clean(m.name);return;}
+    if(m.type==='join'){
+      p.name=clean(m.name);
+      // One limited greeting event per connection; never forward arbitrary commands.
+      if(!p.luaGreeted){p.luaGreeted=true;luaBridge.hello(p.name);}
+      return;
+    }
     if(m.type==='move'){
       const x=Number(m.x),z=Number(m.z),dir=Number(m.dir);
       if(!Number.isFinite(x)||!Number.isFinite(z)||!Number.isFinite(dir))return;
