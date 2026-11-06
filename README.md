@@ -15,3 +15,14 @@ La mappa Demo City di Unity **non è inclusa**. Non caricare password, chiavi o 
 
 ## Risorse
 Per sostituire questa demo con la Alpha 1.1 completa, bisogna caricare i sorgenti dello ZIP `project_life_rp_alpha_11_pc_3d_editor.zip` nel repository. Il file ZIP rimane disponibile nella conversazione.
+
+## LifeAccount / JDBC (prima implementazione)
+
+Sono presenti un servizio account Java 17 e repository SQL parametrizzati per PostgreSQL e MariaDB/MySQL:
+
+- `core-java/src/main/java/rp/core/AccountAuth.java` — registrazione, verifica password, sessioni con token memorizzati soltanto come hash, scadenza e logout.
+- `core-java/src/test/java/rp/core/AccountAuthTest.java` — test unitari di autenticazione e revoca.
+- `database/{postgresql,mariadb}/002_auth_sessions.sql` — migrazioni di sessione; applicare dopo `001_core.sql`.
+- `core-java/AUTHENTICATION.md` — limiti, sicurezza e istruzioni di test.
+
+**Stato:** il servizio Java non è ancora collegato al multiplayer Node.js né esposto come API. La persistenza SQL non è stata ancora collaudata su database reali. La demo continua ad avere accesso anonimo e non è destinata a server pubblici o monetizzati. Le verifiche CI sono configurate ma non ancora confermate.
