@@ -56,7 +56,7 @@ function createLuaBridge(options={}) {
     while((pos=buffer.indexOf('\n'))>=0) {
       const line=buffer.slice(0,pos).trim();
       buffer=buffer.slice(pos+1);
-      const match=/^RESOURCE ([A-Za-z0-9_-]{1,64}) (STARTED|STOPPED)(?: ([A-Za-z0-9_,-]{1,500}))?$/.exec(line);
+      const match=/^RESOURCE ([A-Za-z0-9_-]{1,64}) (STARTED|STOPPED)(?: ([A-Za-z0-9_,-]{1,1200}))?$/.exec(line);
       if(match) {
         const [,name,state,deps='']=match;
         const dependencies=deps?deps.split(','):[];
