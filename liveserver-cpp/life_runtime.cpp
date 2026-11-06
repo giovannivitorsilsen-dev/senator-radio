@@ -14,11 +14,12 @@ bool eventNameOk(const std::string& name) {
 }
 }
 void LifeRuntime::add(const std::string& name, std::vector<std::string> dependencies,
-                      std::string source, std::vector<std::string> eventNames) {
+                      std::string source, std::vector<std::string> eventNames,
+                      std::vector<std::string> capabilities) {
   for(const auto& event:eventNames) if(!eventNameOk(event))
     throw std::invalid_argument("invalid event registration");
   // The LuaHost validates the resource name and dependency graph.
-  host_.add(name,std::move(dependencies),std::move(source));
+  host_.add(name,std::move(dependencies),std::move(source),std::move(capabilities));
   subscriptions_[name]=std::move(eventNames);
 }
 void LifeRuntime::start(const std::string& name) {
