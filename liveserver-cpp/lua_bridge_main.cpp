@@ -60,7 +60,13 @@ static std::string source(const std::string& filename){
 static void report(const life::LifeRuntime& runtime,const std::vector<Spec>& specs){
  for(const auto& spec:specs){
   std::cout<<"RESOURCE "<<spec.name<<" "<<(runtime.running(spec.name)?"STARTED":"STOPPED");
-  for(const auto& dependency:spec.dependencies)std::cout<<" "<<dependency;
+  if(!spec.dependencies.empty()){
+   std::cout<<" ";
+   for(std::size_t i=0;i<spec.dependencies.size();++i){
+    if(i)std::cout<<",";
+    std::cout<<spec.dependencies[i];
+   }
+  }
   std::cout<<"\n";
  }
  std::cout<<std::flush;
