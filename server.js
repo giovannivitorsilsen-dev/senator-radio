@@ -2,6 +2,7 @@ const http=require('http');
 const fs=require('fs');
 const path=require('path');
 const {createLuaBridge}=require('./bridge/luaBridge');
+const {createTelemetryIpcServer}=require('./bridge/localTelemetryIpc');
 const {WebSocketServer,WebSocket}=require('ws');
 const port=Number(process.env.PORT||3000);
 const clients=new Map();
@@ -17,6 +18,22 @@ const luaBridge=createLuaBridge({
   extraResources:JSON.parse(process.env.LIFE_LUA_EXTRA_RESOURCES||'[]')
 });
 process.on('exit',()=>luaBridge.close());
+// Optional Unix-socket telemetry for the trusted desktop admin process.
+// Never expose this as a game WebSocket/HTTP route.
+if(process.env.LIFE_TELEMETRY_IPC_PATH){
+  if(process.env.LIFE_LUA_BRIDGE!=='1')throw Error('IPC requires enabled Lua bridge');
+  const ipc=createTelemetryIpcServer({
+    socketPath:process.env.LIFE_TELEMETRY_IPC_PATH,
+    key:process.env.LIFE_TELEMETRY_HMAC_KEY,
+    getSnapshot:()=>luaBridge.snapshot()
+  });
+  ipc.listen().catch(()=>{
+    console.error('LifeTelemetry IPC unavailable; check private socket path and permissions');
+    process.exitCode=1;
+    server.close();
+  });
+  process.on('SIGTERM',()=>{ipc.close().finally(()=>process.exit(0));});
+}
 const server=http.createServer((req,res)=>{
   const pathname=new URL(req.url,'http://localhost').pathname;
   if(pathname!=='/'&&pathname!=='/index.html'){res.writeHead(404);return res.end('Not found');}
