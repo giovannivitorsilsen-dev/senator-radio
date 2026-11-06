@@ -23,25 +23,32 @@ function createRuntimeStatusReader({file=process.env.LIFE_RESOURCE_STATUS_FILE,
         const age=now()-snapshot.observedAt;
         const fresh=age>=0 && age<=maxAgeMs;
         if(!fresh)return {live:false,reason:'stale',resources:catalog};
+        if(snapshot.error!==undefined && snapshot.error!==null &&
+           !['runtime startup','runtime callback'].includes(snapshot.error))throw Error('invalid error');
         const active=[];
         const names=new Set();
         for(const resource of snapshot.resources) {
           if(!resource||!validName(resource.name)||
              !['started','stopped'].includes(resource.status)||
-             names.has(resource.name))throw Error('invalid resource');
+             names.has(resource.name)||
+             (resource.dependencies!==undefined &&
+              (!Array.isArray(resource.dependencies)||resource.dependencies.length>16||
+               !resource.dependencies.every(validName))))
+            throw Error('invalid resource');
           names.add(resource.name);
           active.push({name:resource.name,status:resource.status,
-            dependencies:[],source:'cpp-lua-bridge'});
+            dependencies:resource.dependencies||[],source:'cpp-lua-bridge'});
         }
         const live=snapshot.processState==='running';
         const observed=(live||snapshot.processState==='stopped')?active:[];
         return {
           live,reason:live?'confirmed':'bridge-'+snapshot.processState,
+          error:snapshot.error||null,
           observedAt:snapshot.observedAt,
           resources:[
             ...catalog.map(row=>{
               const found=observed.find(o=>o.name===row.name);
-              return found?{...row,status:found.status,source:'cpp-lua-bridge'}:row;
+              return found?{...row,status:found.status,dependencies:found.dependencies,source:'cpp-lua-bridge'}:row;
             }),
             ...observed.filter(row=>!catalog.some(c=>c.name===row.name))
           ]
