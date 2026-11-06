@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>LifeAdmin · PROJECT LIFE RP</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#10141e;color:#edf2fb}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}
+header{background:#171d2b;border-bottom:1px solid #303949;padding:20px 6%;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{font-size:1.2rem;font-weight:750;letter-spacing:.02em}.brand span{color:#85bbff}
+.sub{color:#aab8cc;font-size:.85rem}main{max-width:1050px;margin:32px auto;padding:0 20px}
+h1{font-size:1.8rem;margin-bottom:6px}h2{font-size:1.1rem;margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:25px 0}
+.card,.panel{background:#1a2232;border:1px solid #344058;border-radius:14px;padding:20px}
+.value{font-size:1.55rem;font-weight:750;margin:8px 0}.label{color:#bdc9da;font-size:.83rem}
+.green{color:#69e5ae}.red{color:#ff989a}.muted{color:#b7c2d2}
+button{border:1px solid #516581;border-radius:9px;padding:10px 15px;background:#253852;color:white;font:inherit;cursor:pointer}
+button:hover{background:#344c6d}button:focus-visible{outline:3px solid #7cbcff}
+footer{font-size:.82rem;color:#b8c7d9;margin-top:24px;line-height:1.6}
+code{color:#9bd1fc} .status{font-size:.88rem}
+</style>
+<script defer src="/app.js"></script>
+</head>
+<body>
+<header><div class="brand">◆ Life<span>Admin</span> <span class="sub">v0.2</span></div><div class="sub">PROJECT LIFE RP · Monitor locale</div></header>
+<main>
+<h1>Panoramica server</h1>
+<p class="muted">Diagnostica in sola lettura della demo multiplayer. Aggiornamento automatico ogni 5 secondi.</p>
+<div class="grid">
+<section class="card"><div class="label">Stato della demo</div><div class="value" id="state">Verifica…</div><div class="status muted" id="reason">–</div></section>
+<section class="card"><div class="label">Latenza HTTP locale</div><div class="value" id="latency">–</div><div class="status muted">Non è il ping dei giocatori</div></section>
+<section class="card"><div class="label">Porta gioco</div><div class="value" id="port">–</div><div class="status muted">127.0.0.1</div></section>
+<section class="card"><div class="label">Modalità</div><div class="value">Sola lettura</div><div class="status muted">Nessun comando remoto</div></section>
+</div>
+<section class="panel"><h2>Diagnostica</h2>
+<p class="muted" id="updated">Ultimo controllo: –</p>
+<button type="button" id="refresh">Aggiorna adesso</button>
+<p class="muted" role="status" aria-live="polite" id="message"></p>
+</section>
+<footer>LifeAdmin non è ancora txAdmin: nessun login staff, moderazione, gestione risorse o monitoraggio CPU/RAM. Dashboard vincolata a loopback; non inoltrare pubblicamente la porta 4101. Android resta per il gameplay.</footer>
+</main>
+</body></html>
