@@ -29,10 +29,14 @@ async function refresh(){
       const catalog=await catalogRes.json();
       const container=$('resources');
       container.replaceChildren();
-      if(catalog.resources.length===0) container.textContent='Nessuna risorsa configurata';
+      if(catalog.resources.length===0) container.textContent='Nessuna risorsa osservata o configurata';
+      const info=document.createElement('p');
+      info.textContent=catalog.live?'Stato confermato dal runtime C++ · aggiornamento recente':
+        'Stato runtime non verificato ('+catalog.reason+'): vengono mostrati solo dati di configurazione';
+      container.append(info);
       for(const item of catalog.resources){
         const div=document.createElement('div');
-        div.textContent=item.name+' · configurata, stato runtime sconosciuto'+
+        div.textContent=item.name+' · '+(item.source==='cpp-lua-bridge'?('Lua: '+item.status):'configurata; stato runtime sconosciuto')+
           (item.dependencies.length?' · dipende da '+item.dependencies.join(', '):'');
         div.style.padding='6px 0';
         container.append(div);
