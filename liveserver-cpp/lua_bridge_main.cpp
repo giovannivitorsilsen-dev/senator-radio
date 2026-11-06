@@ -96,10 +96,15 @@ int main(int argc,char** argv){
    if(!runtime.errors().empty())std::cout<<"ERROR runtime callback\n";
    std::cout<<"EVENT_OK\n"<<std::flush;
   }
-  // Stop consumers before dependencies.
-  for(auto it=specs.rbegin();it!=specs.rend();++it){
-   if(!runtime.running(it->name))continue;
-   try{runtime.stop(it->name);}catch(const std::exception&){}
+  // Stop consumers before dependencies even when manifest entries were unordered.
+  for(std::size_t pass=0;pass<specs.size();++pass){
+   bool progressed=false;
+   for(const auto& spec:specs){
+    if(!runtime.running(spec.name))continue;
+    try {runtime.stop(spec.name);progressed=true;}
+    catch(const std::exception&) {}
+   }
+   if(!progressed)break;
   }
   report(runtime,specs);
  }catch(const std::exception&){
