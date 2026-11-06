@@ -67,3 +67,17 @@ test('invalid supervisor settings do not spawn the native process',()=>{
   maxSilentMs:50,spawn:()=>{called=true;}}));
  assert.equal(called,false);
 });
+
+test('watchdog still trips when child stdin is permanently backpressured',async t=>{
+ const file=temp(t),child=fakeChild();
+ child.stdin.writableNeedDrain=true;
+ const bridge=createLuaBridge({enabled:true,binary:'local',script:'local.lua',
+  statusFile:file,spawn:()=>child,pingIntervalMs:100,maxSilentMs:1000});
+ t.after(()=>bridge.close());
+ child.stdout.emit('data','RESOURCE welcome STARTED\n');
+ await new Promise(resolve=>setTimeout(resolve,1250));
+ const status=createRuntimeStatusReader({file}).read([]);
+ assert.equal(status.live,false);
+ assert.equal(status.error,'runtime heartbeat timeout');
+ assert.ok(child.signals.includes('SIGKILL'));
+});
