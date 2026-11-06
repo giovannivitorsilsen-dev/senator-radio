@@ -62,3 +62,17 @@ test('IPC cannot be started without a valid key or local socket',()=>{
  assert.throws(()=>createTelemetryIpcServer({socketPath:'/tmp/life.sock',key:'wrong',getSnapshot:()=>({})}));
  assert.throws(()=>createTelemetryIpcServer({socketPath:'127.0.0.1:443',key:KEY,getSnapshot:()=>({})}));
 });
+
+test('IPC refuses a world-readable directory and an existing socket path',
+ {skip:process.platform==='win32'},async t=>{
+ const socketPath=fixture(t);
+ const directory=path.dirname(socketPath);
+ fs.chmodSync(directory,0o755);
+ const exposed=createTelemetryIpcServer({socketPath,key:KEY,getSnapshot:()=>({})});
+ await assert.rejects(exposed.listen(),/mode 0700/);
+ fs.chmodSync(directory,0o700);
+ fs.writeFileSync(socketPath,'do not unlink me');
+ const occupied=createTelemetryIpcServer({socketPath,key:KEY,getSnapshot:()=>({})});
+ await assert.rejects(occupied.listen(),/already exists/);
+ assert.equal(fs.readFileSync(socketPath,'utf8'),'do not unlink me');
+});
