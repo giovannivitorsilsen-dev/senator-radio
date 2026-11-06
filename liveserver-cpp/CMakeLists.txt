@@ -11,6 +11,8 @@ add_test(NAME resource_test COMMAND life_resource_test)
 add_executable(life_runtime_test runtime_test.cpp)
 target_link_libraries(life_runtime_test PRIVATE life_resources)
 add_test(NAME runtime_test COMMAND life_runtime_test)
+add_executable(lifeserver-console life_console_main.cpp)
+target_link_libraries(lifeserver-console PRIVATE life_resources)
 
 option(LIFE_ENABLE_LUA "Compile embedded Lua 5.4 runtime" OFF)
 if(LIFE_ENABLE_LUA)
