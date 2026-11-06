@@ -5,6 +5,7 @@ const path=require('node:path');
 const crypto=require('node:crypto');
 const {createStatusMonitor}=require('../core/status');
 const {createJavaVerifier}=require('./java-verifier');
+const {createResourceCatalog}=require('../core/resource-catalog');
 
 const page=fs.readFileSync(path.join(__dirname,'public','index.html'));
 const script=fs.readFileSync(path.join(__dirname,'public','app.js'));
@@ -15,7 +16,7 @@ const headers={
   'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
 };
 const loopback=address=>address==='127.0.0.1'||address==='::1'||address==='::ffff:127.0.0.1';
-function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=createJavaVerifier(),now=Date.now}={}) {
+function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=createJavaVerifier(),catalog=createResourceCatalog(),now=Date.now}={}) {
   if(!Number.isInteger(targetPort)||targetPort<1||targetPort>65535)throw new RangeError('Invalid game port');
   const sessions=new Map();
   let attempts=[];
@@ -41,6 +42,8 @@ function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=cre
     if(!loopback(req.socket.remoteAddress) || !/^(?:127\.0\.0\.1|localhost)(?::\d{1,5})?$/.test(host)){
       res.writeHead(403,headers);res.end('Forbidden');return;
     }
+    // Avoid accumulating expired sessions indefinitely.
+    for(const [sid,item] of sessions) if(item.expires<=now())sessions.delete(sid);
     const pathname=(req.url||'').split('?')[0];
     if(req.method==='GET'&&pathname==='/'){
       res.writeHead(200,{...headers,'Content-Type':'text/html; charset=utf-8'});res.end(page);return;
@@ -74,7 +77,7 @@ function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=cre
       reply(res,200,{authorized:false},{'Set-Cookie':'lifeadmin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'});
       return;
     }
-    if(req.method==='GET'&&pathname==='/api/status'){
+    if(req.method==='GET'&&(pathname==='/api/status'||pathname==='/api/resources')){
       if(!session||session.expires<=now()){
         if(key)sessions.delete(key);
         reply(res,401,{error:'Authentication required'});return;
@@ -82,8 +85,13 @@ function makeDashboard({monitor=createStatusMonitor(),targetPort=3000,verify=cre
       try {
         // Permissions and token expiry are rechecked on every protected request.
         if(!(await verify(session.token))){sessions.delete(key);reply(res,403,{error:'Access revoked'});return;}
-        const game=await monitor.status(targetPort);
-        reply(res,200,{dashboard:'LifeAdmin v0.3',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game});
+        if(pathname==='/api/resources'){
+          reply(res,200,{mode:'catalog-only',live:false,resources:catalog.list()});
+        }else{
+          const game=await monitor.status(targetPort);
+          reply(res,200,{dashboard:'LifeAdmin v0.4',mode:'authenticated-local-read-only',checkedAt:new Date().toISOString(),game,
+            adminProcess:{uptimeSeconds:Math.floor(process.uptime()),memoryRssMiB:Math.round(process.memoryUsage().rss/1048576)}});
+        }
       }catch{reply(res,503,{error:'Status temporarily unavailable'});}
       return;
     }
