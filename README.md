@@ -26,3 +26,9 @@ Il progetto contiene ora la prima persistenza JDBC del nucleo RP (codice **non a
 - `docs/ACCOUNT_PERSISTENCE.md` — setup e limitazioni.
 
 L'implementazione è **sperimentale**: non esistono ancora endpoint account per il client, gateway autenticato, integrazione pagamenti verificata o test JDBC confermati su database reali. Non usare questo codice come server pubblico a pagamento.
+
+## LifeServer v0.3 — console Lua integrata (sperimentale)
+
+Nella cartella [`liveserver-cpp`](liveserver-cpp/) è disponibile un primo collegamento funzionante a livello di codice fra gestione risorse, Lua 5.4 ed eventi C++. La console nativa `lifeserver-lua-console` può avviare un file Lua locale scelto dall'operatore, emettere eventi, leggere i log e fermare/riavviare risorse; i test sono in `integrated_test.cpp`.
+
+Istruzioni dettagliate e limiti: [`docs/LIFERUNTIME_INTEGRATION.md`](docs/LIFERUNTIME_INTEGRATION.md). **Non è ancora collegata al multiplayer Node.js o alla persistenza Java**; non esiste pannello LifeAdmin remoto e non è una sandbox affidabile per script di terzi. Le build e i test automatici devono ancora essere confermati in GitHub Actions.
