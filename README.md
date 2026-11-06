@@ -32,3 +32,9 @@ L'implementazione è **sperimentale**: non esistono ancora endpoint account per 
 Nella cartella [`liveserver-cpp`](liveserver-cpp/) è disponibile un primo collegamento funzionante a livello di codice fra gestione risorse, Lua 5.4 ed eventi C++. La console nativa `lifeserver-lua-console` può avviare un file Lua locale scelto dall'operatore, emettere eventi, leggere i log e fermare/riavviare risorse; i test sono in `integrated_test.cpp`.
 
 Istruzioni dettagliate e limiti: [`docs/LIFERUNTIME_INTEGRATION.md`](docs/LIFERUNTIME_INTEGRATION.md). **Non è ancora collegata al multiplayer Node.js o alla persistenza Java**; non esiste pannello LifeAdmin remoto e non è una sandbox affidabile per script di terzi. Le build e i test automatici devono ancora essere confermati in GitHub Actions.
+
+## LifePermissions v0.5 — capacità Lua per risorsa
+
+Il server C++ registra un elenco esplicito di capacità per ciascuna risorsa Lua. Le nuove API sono `HasCapability(capability)` e `RequestAction(capability, payload)`. **Solo `chat.notice` ha un'implementazione dimostrativa**, che scrive nel log locale della risorsa dopo la verifica del permesso. Nessuna API per staff, denaro, veicoli o Supporter è esposta dagli script in questa versione.
+
+Sono stati aggiunti controlli sulle capacità sconosciute, sui wildcard, sulle risorse prive di concessioni e sulla separazione tra risorse. Test C++ base e test Lua aggiornati. Leggi [`docs/LIFEPERMISSIONS_V05.md`](docs/LIFEPERMISSIONS_V05.md) per limiti e istruzioni. Le build/CI non sono ancora confermate.
