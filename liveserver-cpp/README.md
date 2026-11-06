@@ -1,0 +1,1 @@
+LifeServer native C++ resource manager, experimental. Supports dependency ordering, start and stop states, cycle protection. Does not execute Lua or implement FXServer networking. Build: cmake -S liveserver-cpp -B liveserver-cpp/build && cmake --build liveserver-cpp/build && ctest --test-dir liveserver-cpp/build --output-on-failure
