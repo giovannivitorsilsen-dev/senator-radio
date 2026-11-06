@@ -18,20 +18,27 @@ function createLuaBridge(options={}) {
     throw new Error('Lua bridge requires trusted binary and script paths');
 
   const statusFile=options.statusFile;
+  const extraResources=options.extraResources||[];
+  if(!Array.isArray(extraResources)||extraResources.length>15||
+     !extraResources.every(v=>typeof v==='string'&&v.length<=512&&
+       /^[A-Za-z0-9_-]+(?::[A-Za-z0-9_,-]+)?=.+$/.test(v)))
+    throw new Error('Invalid trusted resource specs');
   if(statusFile!==undefined && (typeof statusFile!=='string'||!path.isAbsolute(statusFile)))
     throw new Error('LIFE_RESOURCE_STATUS_FILE must be an absolute local path');
-  const child=(options.spawn||spawn)(binary,[script],{
+  const child=(options.spawn||spawn)(binary,[script,...extraResources],{
     cwd:options.cwd||path.resolve(__dirname,'..'),
     shell:false,stdio:['pipe','pipe','pipe'],windowsHide:true
   });
   let running=true,buffer='',confirmed=false,gracefulStop=false;
+  const known=new Map();
+  let lastError=null;
   const publish=(state)=>{
     if(!statusFile)return;
     const result={
       schema:1,source:'cpp-lua-bridge',observedAt:Date.now(),
       processState:state,
-      resources:state==='running'&&confirmed?[{name:'welcome',status:'started'}]:
-        state==='stopped'?[{name:'welcome',status:'stopped'}]:[]
+      resources:state==='running'||state==='stopped'?[...known.values()]:[],
+      error:lastError
     };
     const tmp=statusFile+'.tmp-'+process.pid;
     try {
@@ -49,14 +56,22 @@ function createLuaBridge(options={}) {
     while((pos=buffer.indexOf('\n'))>=0) {
       const line=buffer.slice(0,pos).trim();
       buffer=buffer.slice(pos+1);
-      if(line==='RESOURCE welcome STARTED') {
-        gracefulStop=false;
-        confirmed=true;
+      const match=/^RESOURCE ([A-Za-z0-9_-]{1,64}) (STARTED|STOPPED)(?: ([A-Za-z0-9_,-]{1,500}))?$/.exec(line);
+      if(match) {
+        const [,name,state,deps='']=match;
+        const dependencies=deps?deps.split(','):[];
+        // A dependency list emitted as space-separated by older/newer bridge
+        // versions is normalized separately below.
+        if(dependencies.length<=16&&dependencies.every(v=>/^[A-Za-z0-9_-]{1,64}$/.test(v))){
+          known.set(name,{name,status:state==='STARTED'?'started':'stopped',dependencies});
+          if(name==='welcome')confirmed=state==='STARTED';
+          if(state==='STARTED')gracefulStop=false;
+          if(state==='STOPPED')gracefulStop=true;
+          publish(state==='STARTED'?'running':'stopped');
+        }
+      }else if(/^ERROR (runtime startup|runtime callback)$/.test(line)){
+        lastError=line.slice(6);
         publish('running');
-      } else if(line==='RESOURCE welcome STOPPED') {
-        confirmed=false;
-        gracefulStop=true;
-        publish('stopped');
       }
       // PONG / EVENT_OK are deliberately not interpreted as resource state.
     }
