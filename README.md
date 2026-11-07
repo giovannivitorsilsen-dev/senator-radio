@@ -117,3 +117,11 @@ An opt-in **read-only Unix-domain socket** is available for local telemetry from
 Linux setup: supply `LIFE_TELEMETRY_IPC_PATH` pointing to a socket inside an operator-owned private directory (0700) and `LIFE_TELEMETRY_HMAC_KEY` (64 hexadecimal characters) to both game and admin processes. The local socket is read-only and no TCP admin port is introduced. The old signed file option remains available when IPC is not selected. Windows named-pipe support is **not yet implemented**.
 
 New unit tests and a native C++/Lua → Unix IPC end-to-end test live in `tests/lifeadmin-local-ipc.test.js` and `tests/life-bridge-native-e2e.test.js`. The native test is skipped unless a compiled binary is configured. See [docs/LIFEADMIN_V09.md](docs/LIFEADMIN_V09.md) for setup, security boundaries and limitations. **Do not expose LifeAdmin port 4101 to the Internet.**
+
+## LifeNetwork ENet + LifeInventory originale — primo incremento open source
+
+- **ENet (MIT):** build C++ opzionale con `-DLIFE_ENABLE_ENET=ON`, libreria ENet fornita dal sistema e `lifenetwork-enet-smoke` registrato in CTest. Vedi `.github/workflows/enet.yml`. **Non** ha ancora sostituito la demo WebSocket o realizzato un server UDP pubblico.
+- **LifeInventory:** modulo Node.js originale `lifeinventory/inventory.js` con catalogo, slot, peso, stack e operazioni atomiche; test in `tests/lifeinventory.test.js`. I giocatori **non** possono ancora chiamare queste operazioni: nessun endpoint è esposto prima di autenticazione e proprietà account realmente collegate.
+- Il codice GPL-3.0 di `ox_inventory` non è stato copiato; ne abbiamo studiato soltanto funzioni generiche.
+
+Istruzioni, licenze, limiti e prossimi passi: [docs/OPEN_SOURCE_INTEGRATIONS_V01.md](docs/OPEN_SOURCE_INTEGRATIONS_V01.md).
