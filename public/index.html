@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>PROJECT LIFE RP · multiplayer test</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#121b26;color:white;font:14px system-ui}canvas{display:block}#ui{position:absolute;top:12px;left:12px;z-index:2;background:#101b2adc;padding:12px;border-radius:12px;max-width:min(80vw,300px)}#status{font-size:12px;color:#b5d1ea}input,button{font:inherit;padding:8px;border-radius:7px;border:1px solid #456079}button{background:#2780cc;color:white}#chat{position:absolute;bottom:105px;left:12px;z-index:3;width:min(340px,72vw)}#log{height:90px;overflow:auto;text-shadow:1px 1px #000}#chatrow{display:flex}#msg{flex:1;min-width:0;background:#142333;color:#fff}#joy{position:absolute;bottom:18px;left:20px;width:110px;height:110px;border-radius:50%;border:2px solid #ffffff66;background:#22334488;touch-action:none;z-index:5}#nub{width:44px;height:44px;border-radius:50%;background:#ffffffaa;position:absolute;left:33px;top:33px}#help{position:absolute;bottom:15px;right:12px;max-width:150px;font-size:12px;color:white;text-shadow:1px 1px black}</style></head>
-<body><div id="ui"><strong>PROJECT LIFE RP — Test Online</strong><div id="status">Connessione…</div><div style="margin-top:7px"><input id="name" placeholder="Nome RP" maxlength="22" style="width:120px"><button id="join">Entra</button></div><small>Questa è una demo tecnica, non Alpha 1.1 completa.</small></div>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>PROJECT LIFE RP · Alpha 1.2 preview</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#121b26;color:white;font:14px system-ui}canvas{display:block}#ui{position:absolute;top:12px;left:12px;z-index:2;background:#101b2adc;padding:12px;border-radius:12px;max-width:min(80vw,300px)}#status{font-size:12px;color:#b5d1ea}input,button{font:inherit;padding:8px;border-radius:7px;border:1px solid #456079}button{background:#2780cc;color:white}#chat{position:absolute;bottom:105px;left:12px;z-index:3;width:min(340px,72vw)}#log{height:90px;overflow:auto;text-shadow:1px 1px #000}#chatrow{display:flex}#msg{flex:1;min-width:0;background:#142333;color:#fff}#joy{position:absolute;bottom:18px;left:20px;width:110px;height:110px;border-radius:50%;border:2px solid #ffffff66;background:#22334488;touch-action:none;z-index:5}#nub{width:44px;height:44px;border-radius:50%;background:#ffffffaa;position:absolute;left:33px;top:33px}#help{position:absolute;bottom:15px;right:12px;max-width:150px;font-size:12px;color:white;text-shadow:1px 1px black}#hud{position:absolute;top:12px;right:12px;z-index:4;background:#102031d9;padding:10px 12px;border:1px solid #4b6777;border-radius:12px;min-width:118px;text-align:right;pointer-events:none}#count{font-weight:700;color:#85e2b5}#zone{font-size:12px;color:#b4d2e4}#mini{display:block;width:126px;height:126px;margin:8px 0 0 auto;border-radius:8px;background:#182839}#tip{position:absolute;top:104px;left:12px;z-index:3;background:#102031d9;max-width:200px;padding:8px;border-radius:9px;font-size:12px;color:#d2e9f8}@media(max-width:520px){#hud{top:8px;right:8px;padding:7px;min-width:110px}#mini{width:110px;height:110px}#tip{top:112px;left:8px;max-width:175px}#ui{top:8px;left:8px;max-width:200px;padding:9px}#help{right:8px}}</style></head>
+<body><div id="ui"><strong>PROJECT LIFE RP — Alpha 1.2 Preview</strong><div id="status">Connessione…</div><div style="margin-top:7px"><input id="name" placeholder="Nome RP" maxlength="22" style="width:120px"><button id="join">Entra</button></div><small>Questa è una demo tecnica, non Alpha 1.1 completa.</small></div>
+<div id="hud"><div id="count">0 giocatori</div><div id="zone">Centro città</div><canvas id="mini" width="156" height="156" aria-label="Mini-mappa della città"></canvas></div><div id="tip">Esplora il centro, il parco e la piazza. Altri giocatori appaiono sulla mini-mappa.</div>
 <div id="chat"><div id="log"></div><div id="chatrow"><input id="msg" placeholder="Scrivi nella chat…" maxlength="160"><button id="send">Invia</button></div></div>
 <div id="joy"><div id="nub"></div></div><div id="help">PC: WASD / frecce · Mobile: joystick</div>
 <script type="module">
@@ -22,9 +23,37 @@ for(let x=-3;x<=3;x++)for(let z=-3;z<=3;z++){
  const b=box(22,h,22,x*42+14,h/2,z*42+14,((x+z)%2)?0x9aafbe:0xb8b6aa);
  for(let a=-8;a<=8;a+=8)for(let y=5;y<h-2;y+=5){const win=box(1.7,2,.08,x*42+14+a,y,z*42+2.92,0x567a91);}
 }
+// Alpha 1.2 preview landmarks: original procedural meshes, no GTA or third-party assets.
+const park=new THREE.Mesh(new THREE.PlaneGeometry(28,28),material(0x43865a));park.rotation.x=-Math.PI/2;park.position.set(-50,.06,-50);scene.add(park);
+const trunkMat=material(0x76543b),leafMat=material(0x388452);
+for(const [tx,tz] of [[-61,-60],[-41,-60],[-61,-40],[-41,-40]]){
+ const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.28,.4,3,7),trunkMat);
+ trunk.position.set(tx,1.5,tz);scene.add(trunk);
+ const crown=new THREE.Mesh(new THREE.SphereGeometry(2.1,8,6),leafMat);
+ crown.position.set(tx,4,tz);scene.add(crown);
+}
+const plaza=new THREE.Mesh(new THREE.CircleGeometry(13,32),material(0x9ba5a8));
+plaza.rotation.x=-Math.PI/2;plaza.position.set(20,.065,20);scene.add(plaza);
+const fountain=new THREE.Mesh(new THREE.CylinderGeometry(3.2,3.5,.6,24),material(0x768998));
+fountain.position.set(20,.38,20);scene.add(fountain);
+const water=new THREE.Mesh(new THREE.CylinderGeometry(2.8,2.8,.09,24),material(0x4bafde));
+water.position.set(20,.73,20);scene.add(water);
+const hospital=box(18,12,15,68,6,-54,0xe4e8ed);
+box(5,1,.15,68,9.5,-46.4,0xc43f49);
+box(1,5,.15,68,9.5,-46.3,0xc43f49);
+const streetLampMat=material(0xdddab4);
+for(const [lx,lz] of [[-15,-15],[15,-15],[-15,15],[15,15],[58,-15],[-58,15]]){
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,5.5,7),material(0x454d54));
+ pole.position.set(lx,2.75,lz);scene.add(pole);
+ const lamp=new THREE.Mesh(new THREE.SphereGeometry(.42,8,6),streetLampMat);
+ lamp.position.set(lx,5.5,lz);scene.add(lamp);
+}
 const mk=(col)=>{const g=new THREE.Group();const legs=new THREE.Mesh(new THREE.CylinderGeometry(.36,.45,1.4,8),material(col));legs.position.y=.8;g.add(legs);const head=new THREE.Mesh(new THREE.SphereGeometry(.42,12,10),material(0xe6b58c));head.position.y=1.75;g.add(head);scene.add(g);return g;};
 const me=mk(0x2b80d2),avatars=new Map(),keys={};let myId=0;let px=0,pz=0,angle=0;let joyX=0,joyY=0;
 const status=document.querySelector('#status');const log=document.querySelector('#log');
+const minimap=document.querySelector('#mini'),ctx=minimap.getContext('2d');
+const hudCount=document.querySelector('#count'),hudZone=document.querySelector('#zone');
+let onlinePlayers=[];const landmarks=[{x:-50,z:-50,label:'Parco',color:'#55c483'},{x:20,z:20,label:'Piazza',color:'#e6be63'},{x:68,z:-54,label:'Ospedale',color:'#ef7070'}];
 const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
 ws.onopen=()=>status.textContent='Connesso al server';ws.onclose=()=>status.textContent='Server disconnesso';
 document.querySelector('#join').onclick=()=>{if(ws.readyState===1)ws.send(JSON.stringify({type:'join',name:document.querySelector('#name').value}));};
@@ -33,16 +62,18 @@ document.querySelector('#send').onclick=send;document.querySelector('#msg').onke
 ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
  if(m.type==='welcome'){myId=m.id;status.textContent='Connesso · ID '+myId;}
  if(m.type==='chat'){const el=document.createElement('div');el.textContent=m.name+': '+m.message;log.appendChild(el);while(log.children.length>18)log.firstChild.remove();log.scrollTop=log.scrollHeight;}
- if(m.type==='players'){const known=new Set();for(const p of m.players){known.add(p.id);if(p.id===myId)continue;let a=avatars.get(p.id);if(!a){a=mk(0xc96544);avatars.set(p.id,a);}a.position.set(p.x,0,p.z);a.rotation.y=p.dir;}for(const [id,a] of avatars)if(!known.has(id)){scene.remove(a);avatars.delete(id);}}
+ if(m.type==='players'){onlinePlayers=m.players;hudCount.textContent=m.players.length+' giocator'+(m.players.length===1?'e':'i')+' online';const known=new Set();for(const p of m.players){known.add(p.id);if(p.id===myId)continue;let a=avatars.get(p.id);if(!a){a=mk(0xc96544);avatars.set(p.id,a);}a.position.set(p.x,0,p.z);a.rotation.y=p.dir;}for(const [id,a] of avatars)if(!known.has(id)){scene.remove(a);avatars.delete(id);}}
 };
 onkeydown=e=>{if(document.activeElement?.tagName==='INPUT')return;keys[e.key.toLowerCase()]=true;};onkeyup=e=>keys[e.key.toLowerCase()]=false;
 const joy=document.querySelector('#joy'),nub=document.querySelector('#nub');function stick(e){const r=joy.getBoundingClientRect();const dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2;joyX=Math.max(-1,Math.min(1,dx/48));joyY=Math.max(-1,Math.min(1,dy/48));nub.style.transform='translate('+(joyX*33)+'px,'+(joyY*33)+'px)';}
 joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);stick(e)});joy.addEventListener('pointermove',e=>{if(joy.hasPointerCapture(e.pointerId))stick(e)});const reset=()=>{joyX=joyY=0;nub.style.transform=''};joy.addEventListener('pointerup',reset);joy.addEventListener('pointercancel',reset);
-let old=performance.now(),lastSend=0;function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-old)/1000,.05);old=now;
+function renderMini(){if(!ctx)return;const w=minimap.width,h=minimap.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#162b39';ctx.fillRect(0,0,w,h);const scale=w/360;const xy=(x,z)=>[(x+180)*scale,(z+180)*scale];ctx.strokeStyle='#60798b';ctx.lineWidth=3;for(let i=-3;i<=3;i++){let n=xy(i*42,0)[0];ctx.beginPath();ctx.moveTo(n,0);ctx.lineTo(n,h);ctx.stroke();n=xy(0,i*42)[1];ctx.beginPath();ctx.moveTo(0,n);ctx.lineTo(w,n);ctx.stroke();}for(const mark of landmarks){const [x,y]=xy(mark.x,mark.z);ctx.fillStyle=mark.color;ctx.fillRect(x-3,y-3,6,6);}for(const p of onlinePlayers){if(p.id===myId)continue;const [x,y]=xy(p.x,p.z);ctx.fillStyle='#f29c72';ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();}const [x,y]=xy(px,pz);ctx.fillStyle='#7ce3fc';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();}
+let old=performance.now(),lastSend=0,lastMini=0;function loop(now){requestAnimationFrame(loop);const dt=Math.min((now-old)/1000,.05);old=now;
  const dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0)+joyX;
  const dz=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0)+joyY;
  const len=Math.hypot(dx,dz);if(len>.05){const vx=dx/Math.max(1,len),vz=dz/Math.max(1,len);px=Math.max(-179,Math.min(179,px+vx*5*dt));pz=Math.max(-179,Math.min(179,pz+vz*5*dt));angle=Math.atan2(vx,vz);}
- me.position.set(px,0,pz);me.rotation.y=angle;const desired=new THREE.Vector3(px+0,7,pz+12);camera.position.lerp(desired,.13);camera.lookAt(px,1,pz);
+ me.position.set(px,0,pz);me.rotation.y=angle;
+ let nearest='Centro città',distance=Infinity;for(const p of landmarks){const d=Math.hypot(px-p.x,pz-p.z);if(d<distance){distance=d;nearest=p.label;}}hudZone.textContent=distance<30?nearest:'Centro città';if(now-lastMini>160){renderMini();lastMini=now;}const desired=new THREE.Vector3(px+0,7,pz+12);camera.position.lerp(desired,.13);camera.lookAt(px,1,pz);
  if(now-lastSend>90&&ws.readyState===1){ws.send(JSON.stringify({type:'move',x:px,z:pz,dir:angle}));lastSend=now;}
  renderer.render(scene,camera);
 }requestAnimationFrame(loop);onresize=()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);};
