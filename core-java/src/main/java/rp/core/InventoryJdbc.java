@@ -105,25 +105,22 @@ public final class InventoryJdbc {
     public Inventory read(UUID community,UUID account)throws SQLException {
         Objects.requireNonNull(community);Objects.requireNonNull(account);
         try(Connection c=ds.getConnection()){
-            member(c,community,account);
-            long revision;
-            try(PreparedStatement p=c.prepareStatement(
-                "SELECT revision FROM inventory_accounts WHERE community_id=? AND account_id=?")){
-                scope(p,c,community,account);
-                try(ResultSet rs=p.executeQuery()){
-                    if(!rs.next())throw new SecurityException("inventory not provisioned");
-                    revision=rs.getLong(1);
+            c.setAutoCommit(false);
+            try {
+                member(c,community,account);
+                // Lock owner row to obtain one internally consistent revision + balance snapshot.
+                long revision=lockRevision(c,community,account);
+                Map<String,Integer> items=new TreeMap<>();
+                try(PreparedStatement p=c.prepareStatement(
+                    "SELECT item_id,quantity FROM inventory_balances WHERE community_id=? AND account_id=?")){
+                    scope(p,c,community,account);
+                    try(ResultSet rs=p.executeQuery()){
+                        while(rs.next())items.put(rs.getString(1),rs.getInt(2));
+                    }
                 }
-            }
-            Map<String,Integer> items=new TreeMap<>();
-            try(PreparedStatement p=c.prepareStatement(
-                "SELECT item_id,quantity FROM inventory_balances WHERE community_id=? AND account_id=?")){
-                scope(p,c,community,account);
-                try(ResultSet rs=p.executeQuery()){
-                    while(rs.next())items.put(rs.getString(1),rs.getInt(2));
-                }
-            }
-            return new Inventory(revision,Collections.unmodifiableMap(items));
+                c.commit();
+                return new Inventory(revision,Collections.unmodifiableMap(items));
+            }catch(SQLException|RuntimeException e){c.rollback();throw e;}
         }
     }
     /** Trusted grant from an authoritative game service ONLY, never a client command. */
