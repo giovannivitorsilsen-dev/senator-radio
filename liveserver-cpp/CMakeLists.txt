@@ -35,3 +35,15 @@ if(LIFE_ENABLE_LUA)
   add_executable(lifeserver-lua-bridge lua_bridge_main.cpp)
   target_link_libraries(lifeserver-lua-bridge PRIVATE life_lua)
 endif()
+
+# ENet is deliberately opt-in. The default browser WebSocket demo is unchanged.
+# Install the official ENet development package (MIT) on a trusted build host.
+option(LIFE_ENABLE_ENET "Build native ENet transport integration smoke" OFF)
+if(LIFE_ENABLE_ENET)
+  find_path(LIFE_ENET_INCLUDE_DIR NAMES enet/enet.h REQUIRED)
+  find_library(LIFE_ENET_LIBRARY NAMES enet REQUIRED)
+  add_executable(lifenetwork-enet-smoke lifenetwork_enet_smoke.cpp)
+  target_include_directories(lifenetwork-enet-smoke PRIVATE ${LIFE_ENET_INCLUDE_DIR})
+  target_link_libraries(lifenetwork-enet-smoke PRIVATE ${LIFE_ENET_LIBRARY})
+  add_test(NAME enet_transport_smoke COMMAND lifenetwork-enet-smoke)
+endif()
