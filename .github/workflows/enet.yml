@@ -1,0 +1,21 @@
+name: LifeNetwork ENet native prototype
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  enet-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ENet development headers (MIT)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libenet-dev cmake g++
+      - name: Build optional LifeNetwork ENet smoke
+        run: |
+          cmake -S liveserver-cpp -B liveserver-cpp/build-enet -DLIFE_ENABLE_ENET=ON -DCMAKE_BUILD_TYPE=Debug
+          cmake --build liveserver-cpp/build-enet --parallel 2
+      - name: Run ENet and C++ core tests
+        run: ctest --test-dir liveserver-cpp/build-enet --output-on-failure
