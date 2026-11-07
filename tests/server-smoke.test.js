@@ -29,12 +29,23 @@ test('Linux/Windows browser multiplayer smoke', {timeout:12000},async()=>{
    catch{await new Promise(r=>setTimeout(r,80));}
   }
   assert.equal(ready,true,'server should answer HTTP 200');
+  const html=await new Promise((resolve,reject)=>http.get('http://127.0.0.1:'+port+'/',res=>{
+   let content='';res.setEncoding('utf8');res.on('data',chunk=>content+=chunk);
+   res.on('end',()=>resolve(content));
+  }).on('error',reject));
+  assert.match(html,/Alpha 1\.2 Preview/);
+  assert.match(html,/id="mini"/);
+  assert.match(html,/id="count"/);
+  assert.match(html,/Ospedale/);
   const a=await connect('ws://127.0.0.1:'+port);
   const b=await connect('ws://127.0.0.1:'+port);
   sockets.push(a,b);
+  // The initial welcome may arrive immediately after the socket opens.
+  // New connections must also appear with finite server-owned coordinates.
   const sawTwo=until(a,m=>m.type==='players'&&m.players.length===2);
   const snapshot=await sawTwo;
   assert.equal(snapshot.players.length,2);
+  assert.equal(snapshot.players.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)),true);
   const chat=until(b,m=>m.type==='chat'&&m.message==='ciao');
   a.send(JSON.stringify({type:'chat',message:'ciao'}));
   assert.equal((await chat).message,'ciao');
