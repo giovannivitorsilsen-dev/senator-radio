@@ -133,6 +133,32 @@ public final class JdbcIntegrationTest {
             throw new AssertionError("nonmember recipient accepted");
         }catch(SecurityException expected){}
         check(newLedger.read(community2,player).items().isEmpty(),"cross-community access changed inventory");
+
+        // Session-owned inventory access: verified sender is always the token owner.
+        var playerLogin=auth.login("ply_"+unique,"Long-Safe-Player-Password-2026".toCharArray()).orElseThrow();
+        InventorySessionService inventorySessions=new InventorySessionService(freshAuth,newLedger);
+        check(inventorySessions.readOwn(playerLogin.token(),community).items().get("water")==5,
+              "authenticated player did not read own persistent inventory");
+        try {
+            inventorySessions.readOwn("not-a-session",community);
+            throw new AssertionError("invalid session accessed inventory");
+        }catch(SecurityException expected){}
+        try {
+            inventorySessions.readOwn(playerLogin.token(),community2);
+            // The player belongs to both communities, so the second inventory is allowed
+            // but must contain nothing from community one.
+            check(inventorySessions.readOwn(playerLogin.token(),community2).items().isEmpty(),
+                  "cross-community items visible");
+        }catch(SecurityException error){throw new AssertionError("member denied own empty inventory",error);}
+        inventorySessions.transferOwn(playerLogin.token(),UUID.randomUUID(),community,owner,
+                                      "water",1,2,1);
+        check(newLedger.read(community,player).items().get("water")==4,"session transfer sender wrong");
+        check(newLedger.read(community,owner).items().get("water")==4,"session transfer recipient wrong");
+        freshAuth.logout(playerLogin.token());
+        try {
+            inventorySessions.readOwn(playerLogin.token(),community);
+            throw new AssertionError("logged-out player inventory session accepted");
+        }catch(SecurityException expected){}
         System.out.println("JDBC integration PASS: "+dialect);
     }
 }
