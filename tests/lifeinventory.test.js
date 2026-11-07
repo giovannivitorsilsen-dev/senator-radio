@@ -58,3 +58,16 @@ test('Cannot mix different item types, overflow stacks or accept invalid IDs',()
  assert.throws(()=>catalogFrom([{id:'BAD NAME',weightGrams:1,stackLimit:1}]));
  assert.throws(()=>catalogFrom([{id:'water',weightGrams:-1,stackLimit:1}]));
 });
+
+test('Inventory item definitions are isolated from external catalog mutations',()=>{
+ const catalog=items();
+ const inv=makeInventory({catalog,slotCount:2,maxWeightGrams:3000});
+ catalog.set('water',{id:'water',weightGrams:0,stackLimit:1000000});
+ inv.add('water',2);
+ assert.equal(inv.snapshot().weightGrams,1000);
+ assert.throws(()=>inv.add('water',5),/Weight limit/);
+});
+test('Catalog requires string IDs and nonzero integer weights',()=>{
+ assert.throws(()=>catalogFrom([{id:42,weightGrams:1,stackLimit:1}]));
+ assert.throws(()=>catalogFrom([{id:'water',weightGrams:0,stackLimit:1}]));
+});
