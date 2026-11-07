@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "serverName": "PROJECT LIFE RP — Demo City",
+  "maxPlayers": 50,
+  "mode": "development",
+  "visibility": "private",
+  "motd": "Anteprima Alpha 1.2: esplora la città e prova le interazioni RP."
+}
