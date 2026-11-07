@@ -50,7 +50,7 @@ wss.on('connection',(ws)=>{
   const id=nextId++;
   const p={id,name:'Giocatore '+id,x:Math.random()*12-6,z:Math.random()*12-6,dir:0};
   clients.set(ws,p);
-  ws.send(JSON.stringify({type:'welcome',id}));
+  ws.send(JSON.stringify({type:'welcome',id,x:p.x,z:p.z}));
   ws.on('message',buf=>{
     let m;try{m=JSON.parse(buf.toString());}catch{return;}
     if(!m||typeof m!=='object')return;
