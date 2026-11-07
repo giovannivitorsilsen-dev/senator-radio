@@ -11,7 +11,7 @@ function catalogFrom(definitions){
   if(!Array.isArray(definitions)||definitions.length>256)throw Error('Invalid item definitions');
   const items=new Map();
   for(const def of definitions){
-    if(!def||!NAME.test(def.id)||items.has(def.id))throw Error('Invalid or duplicate item');
+    if(!def||typeof def.id!=='string'||!NAME.test(def.id)||items.has(def.id))throw Error('Invalid or duplicate item');
     positiveInt(def.weightGrams,'item weight',100000);
     positiveInt(def.stackLimit,'stack limit',10000);
     items.set(def.id,Object.freeze({id:def.id,weightGrams:def.weightGrams,stackLimit:def.stackLimit}));
@@ -24,7 +24,7 @@ function makeInventory({catalog,slotCount=24,maxWeightGrams=30000}={}){
   positiveInt(maxWeightGrams,'max weight',1000000);
   const definitions=new Map(catalog);
   for(const [id,def] of definitions){
-    if(!NAME.test(id)||!def||def.id!==id)throw Error('Invalid catalog entry');
+    if(typeof id!=='string'||!NAME.test(id)||!def||def.id!==id)throw Error('Invalid catalog entry');
     positiveInt(def.weightGrams,'item weight',100000);
     positiveInt(def.stackLimit,'stack limit',10000);
     definitions.set(id,Object.freeze({...def}));
