@@ -149,3 +149,11 @@ I test DB sono stati estesi per entrambe le varianti PostgreSQL e MariaDB, ma de
 Per provarlo dal tuo Xiaomi 15T: apri GitHub Codespaces sul branch `main`, esegui `npm start`, apri la porta `3000` nel browser; aggiorna la scheda (eventualmente ricarica senza cache). **Niente APK né pannello amministrativo sul telefono.**
 
 Questa è ancora una demo WebSocket browser non autenticata: non include LifeAccount JDBC, inventari persistenti, OneSync/LifeSync di produzione, veicoli guidabili, sistemi economici, server browser o abbonamenti. Non è la Alpha 1.2 completa e non è adatta a server pubblici a pagamento. I test HTTP/WebSocket sono stati estesi in `tests/server-smoke.test.js`.
+
+## LifeServer Alpha 1.2 — configurazione PC-only e prime interazioni RP
+
+Il server WebSocket della demo legge ora il file PC-side `config/server.json` (nome del server, messaggio, sviluppo privato e limite gratuito fisso di **50 giocatori simultanei**). Un limite superiore richiederà in futuro il servizio di licenze e abbonamenti; non è possibile attivarlo cambiando soltanto il file.
+
+Sul client Android/browser sono presenti interazioni di prossimità con fontana, parco e ospedale: pulsante touch **Interagisci** o tasto **E** su PC. Il server controlla posizione e frequenza delle richieste. Non sono comandi amministrativi o modifiche al database.
+
+Per provare: Codespaces `main`, `npm start`, porta `3000`, browser del telefono. Configurazione e gestione del server restano PC-only. Dettagli: [docs/LIFESERVER_ALPHA12_CONFIG_INTERACTIONS.md](docs/LIFESERVER_ALPHA12_CONFIG_INTERACTIONS.md).
