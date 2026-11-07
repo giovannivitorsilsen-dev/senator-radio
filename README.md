@@ -133,3 +133,11 @@ Il modulo originale `lifeinventory` supporta ora trasferimenti **atomici in memo
 L'integrazione ENet ora contiene un vero **test client/server UDP soltanto su 127.0.0.1**, con richiesta e risposta tramite pacchetti affidabili. Il test è registrato in CTest quando `LIFE_ENABLE_ENET=ON` ed è incluso nel workflow ENet esistente. Non è stato creato alcun server UDP pubblico o client Android nativo.
 
 Dettagli e istruzioni: [docs/LIFENETWORK_INVENTORY_V02.md](docs/LIFENETWORK_INVENTORY_V02.md).
+
+## LifeInventory JDBC — dati persistenti per account/community
+
+È stata introdotta una prima persistenza **Java 17 + PostgreSQL/MariaDB** distinta dal prototipo Node.js a slot: migrazione `004_inventory.sql`, inventari per `community_id + account_id`, saldo quantità per oggetto, revisioni e trasferimenti SQL transazionali con identificativo unico anti-replay.
+
+`InventorySessionService` verifica una sessione LifeAccount e consente solamente letture e trasferimenti **dal proprietario del token**. Non esiste ancora una route HTTP/ENet per i giocatori e `grantFromTrustedServer` è destinato solo a logica server autorizzata. I limiti di peso e gli slot del prototipo Node non sono ancora persistiti nel ledger JDBC.
+
+I test DB sono stati estesi per entrambe le varianti PostgreSQL e MariaDB, ma devono ancora essere verificati su CI. Leggi [docs/LIFEINVENTORY_JDBC_V01.md](docs/LIFEINVENTORY_JDBC_V01.md).
