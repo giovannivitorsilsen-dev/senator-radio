@@ -21,10 +21,11 @@ public final class JdbcIntegrationTest {
     }
     static void migrate(DataSource source, String dialect) throws Exception {
         try (Connection c = source.getConnection(); Statement s = c.createStatement()) {
-            for (int version=1; version<=3; version++) {
+            for (int version=1; version<=4; version++) {
                 String name = switch(version) {
                     case 1 -> "001_core.sql";
                     case 2 -> "002_auth_sessions.sql";
+                    case 4 -> "004_inventory.sql";
                     default -> "003_owner.sql";
                 };
                 String script = Files.readString(Path.of("database",dialect,name));
@@ -100,6 +101,38 @@ public final class JdbcIntegrationTest {
             PreparedStatement p=c.prepareStatement("SELECT count(*) FROM audit_log WHERE action='STAFF_GRANT'")){
             try(ResultSet rs=p.executeQuery()){check(rs.next()&&rs.getLong(1)>=1,"audit not persisted");}
         }
+
+        // Persistent LifeInventory: community-account scoping and serializable transfers.
+        InventoryJdbc ledger = new InventoryJdbc(ds);
+        ledger.provision(community,player);
+        ledger.provision(community,owner);
+        ledger.provision(community2,player);
+        var initialInventory=ledger.read(community,player);
+        check(initialInventory.revision()==0,"initial inventory revision");
+        ledger.grantFromTrustedServer(community,player,"water",8,0);
+        InventoryJdbc newLedger=new InventoryJdbc(ds);
+        check(newLedger.read(community,player).items().get("water")==8,"grant not persisted");
+        check(newLedger.read(community2,player).items().isEmpty(),"inventory leaked to another community");
+        UUID transferId=UUID.randomUUID();
+        newLedger.transfer(transferId,community,player,owner,"water",3,1,0);
+        check(newLedger.read(community,player).items().get("water")==5,"sender balance wrong");
+        check(newLedger.read(community,owner).items().get("water")==3,"recipient balance wrong");
+        check(newLedger.read(community,owner).revision()==1,"recipient revision not persisted");
+        try {
+            newLedger.transfer(transferId,community,player,owner,"water",3,2,1);
+            throw new AssertionError("replayed transfer accepted");
+        }catch(SQLException expected){}
+        check(newLedger.read(community,player).items().get("water")==5,"replay changed balance");
+        try {
+            newLedger.transfer(UUID.randomUUID(),community,player,owner,"water",1,1,1);
+            throw new AssertionError("stale revision accepted");
+        }catch(IllegalStateException expected){}
+        check(newLedger.read(community,owner).items().get("water")==3,"stale request modified balance");
+        try {
+            newLedger.transfer(UUID.randomUUID(),community,player,other,"water",1,2,0);
+            throw new AssertionError("nonmember recipient accepted");
+        }catch(SecurityException expected){}
+        check(newLedger.read(community2,player).items().isEmpty(),"cross-community access changed inventory");
         System.out.println("JDBC integration PASS: "+dialect);
     }
 }
