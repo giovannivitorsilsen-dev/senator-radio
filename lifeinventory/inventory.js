@@ -22,19 +22,26 @@ function makeInventory({catalog,slotCount=24,maxWeightGrams=30000}={}){
   if(!(catalog instanceof Map))throw TypeError('Catalog required');
   positiveInt(slotCount,'slots',128);
   positiveInt(maxWeightGrams,'max weight',1000000);
+  const definitions=new Map(catalog);
+  for(const [id,def] of definitions){
+    if(!NAME.test(id)||!def||def.id!==id)throw Error('Invalid catalog entry');
+    positiveInt(def.weightGrams,'item weight',100000);
+    positiveInt(def.stackLimit,'stack limit',10000);
+    definitions.set(id,Object.freeze({...def}));
+  }
   const slots=Array(slotCount).fill(null);
   let revision=0;
   const requireSlot=index=>{
     if(!Number.isSafeInteger(index)||index<1||index>slotCount)throw RangeError('Invalid slot');
     return index-1;
   };
-  const weight=()=>slots.reduce((sum,row)=>sum+(row?catalog.get(row.itemId).weightGrams*row.quantity:0),0);
+  const weight=()=>slots.reduce((sum,row)=>sum+(row?definitions.get(row.itemId).weightGrams*row.quantity:0),0);
   const snapshot=()=>Object.freeze({
     revision,capacityGrams:maxWeightGrams,weightGrams:weight(),
     slots:slots.map((row,i)=>row?{slot:i+1,...row}:null)
   });
   const add=(itemId,quantity,preferredSlot)=>{
-    const def=catalog.get(itemId);
+    const def=definitions.get(itemId);
     if(!def)throw Error('Unknown item');
     positiveInt(quantity,'quantity',10000);
     if(weight()+def.weightGrams*quantity>maxWeightGrams)throw Error('Weight limit exceeded');
@@ -69,7 +76,7 @@ function makeInventory({catalog,slotCount=24,maxWeightGrams=30000}={}){
     if(!src)throw Error('Empty source slot');
     positiveInt(quantity,'quantity',10000);
     if(quantity>src.quantity)throw Error('Insufficient items');
-    const def=catalog.get(src.itemId);
+    const def=definitions.get(src.itemId);
     if(dst&&dst.itemId!==src.itemId)throw Error('Destination occupied by another item');
     if((dst?dst.quantity:0)+quantity>def.stackLimit)throw Error('Stack limit exceeded');
     slots[to]={itemId:src.itemId,quantity:(dst?dst.quantity:0)+quantity};
