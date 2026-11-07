@@ -60,7 +60,7 @@ document.querySelector('#join').onclick=()=>{if(ws.readyState===1)ws.send(JSON.s
 const send=()=>{const el=document.querySelector('#msg');if(el.value.trim()&&ws.readyState===1)ws.send(JSON.stringify({type:'chat',message:el.value}));el.value='';};
 document.querySelector('#send').onclick=send;document.querySelector('#msg').onkeydown=e=>{if(e.key==='Enter')send();};
 ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}
- if(m.type==='welcome'){myId=m.id;status.textContent='Connesso · ID '+myId;}
+ if(m.type==='welcome'){myId=m.id;if(Number.isFinite(m.x)&&Number.isFinite(m.z)){px=m.x;pz=m.z;}status.textContent='Connesso · ID '+myId;}
  if(m.type==='chat'){const el=document.createElement('div');el.textContent=m.name+': '+m.message;log.appendChild(el);while(log.children.length>18)log.firstChild.remove();log.scrollTop=log.scrollHeight;}
  if(m.type==='players'){onlinePlayers=m.players;hudCount.textContent=m.players.length+' giocator'+(m.players.length===1?'e':'i')+' online';const known=new Set();for(const p of m.players){known.add(p.id);if(p.id===myId)continue;let a=avatars.get(p.id);if(!a){a=mk(0xc96544);avatars.set(p.id,a);}a.position.set(p.x,0,p.z);a.rotation.y=p.dir;}for(const [id,a] of avatars)if(!known.has(id)){scene.remove(a);avatars.delete(id);}}
 };
