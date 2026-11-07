@@ -4,6 +4,9 @@ const path=require('path');
 const {createLuaBridge}=require('./bridge/luaBridge');
 const {createTelemetryIpcServer}=require('./bridge/localTelemetryIpc');
 const {WebSocketServer,WebSocket}=require('ws');
+const {loadServerConfig}=require('./config/serverConfig');
+const serverConfig=loadServerConfig();
+const RP_POINTS=Object.freeze({fountain:{x:20,z:20,label:'Fontana della piazza',message:'La fontana è accesa. Questo è un punto d’incontro della community.'},hospital:{x:68,z:-54,label:'Ospedale',message:'L’ospedale è ancora dimostrativo. Servizi medici in sviluppo.'},park:{x:-50,z:-50,label:'Parco cittadino',message:'Una zona tranquilla per incontrare altri giocatori.'}});
 const port=Number(process.env.PORT||3000);
 const clients=new Map();
 let nextId=1;
@@ -47,10 +50,11 @@ const wss=new WebSocketServer({server,maxPayload:4096});
 const clean=s=>String(s||'Giocatore').replace(/[^a-zA-Z0-9 _-]/g,'').slice(0,22)||'Giocatore';
 const broadcast=(data)=>{const text=JSON.stringify(data);for(const ws of clients.keys()) if(ws.readyState===WebSocket.OPEN)ws.send(text);};
 wss.on('connection',(ws)=>{
+  if(clients.size>=serverConfig.maxPlayers){ws.close(1013,'Server full');return;}
   const id=nextId++;
   const p={id,name:'Giocatore '+id,x:Math.random()*12-6,z:Math.random()*12-6,dir:0};
   clients.set(ws,p);
-  ws.send(JSON.stringify({type:'welcome',id,x:p.x,z:p.z}));
+  ws.send(JSON.stringify({type:'welcome',id,x:p.x,z:p.z,serverName:serverConfig.serverName,maxPlayers:serverConfig.maxPlayers,motd:serverConfig.motd}));
   ws.on('message',buf=>{
     let m;try{m=JSON.parse(buf.toString());}catch{return;}
     if(!m||typeof m!=='object')return;
@@ -70,6 +74,16 @@ wss.on('connection',(ws)=>{
       if(Math.abs(x)>180||Math.abs(z)>180)return;
       p.x=x;p.z=z;p.dir=dir;p.lastAccepted=now;
     }
+    if(m.type==='interact'){
+      const point=typeof m.point==='string'?RP_POINTS[m.point]:null;
+      if(!point)return;
+      const now=Date.now();
+      if(now-(p.lastInteraction||0)<1000)return;
+      if(Math.hypot(p.x-point.x,p.z-point.z)>8)return;
+      p.lastInteraction=now;
+      ws.send(JSON.stringify({type:'interaction',point:m.point,label:point.label,message:point.message}));
+      return;
+    }
     if(m.type==='chat'){
       const msg=String(m.message||'').trim().slice(0,160).replace(/[<>]/g,'');
       if(!msg)return;
@@ -81,4 +95,4 @@ wss.on('connection',(ws)=>{
   ws.on('close',()=>clients.delete(ws));
 });
 setInterval(()=>broadcast({type:'players',players:[...clients.values()].map(({id,name,x,z,dir})=>({id,name,x,z,dir}))}),120);
-server.listen(port,'0.0.0.0',()=>console.log('PROJECT LIFE RP game ready on port '+port));
+server.listen(port,'0.0.0.0',()=>console.log('PROJECT LIFE RP '+serverConfig.serverName+' ready on port '+port+' (max '+serverConfig.maxPlayers+' players)'));
