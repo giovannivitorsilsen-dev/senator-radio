@@ -125,3 +125,11 @@ New unit tests and a native C++/Lua → Unix IPC end-to-end test live in `tests/
 - Il codice GPL-3.0 di `ox_inventory` non è stato copiato; ne abbiamo studiato soltanto funzioni generiche.
 
 Istruzioni, licenze, limiti e prossimi passi: [docs/OPEN_SOURCE_INTEGRATIONS_V01.md](docs/OPEN_SOURCE_INTEGRATIONS_V01.md).
+
+## LifeInventory transfer + ENet localhost packet exchange
+
+Il modulo originale `lifeinventory` supporta ora trasferimenti **atomici in memoria** tra due inventari trusted con controllo delle revisioni, peso e slot. I test coprono duplicazioni, richieste obsolete e rifiuti senza modifiche parziali. Non è ancora collegato agli account autenticati o al database.
+
+L'integrazione ENet ora contiene un vero **test client/server UDP soltanto su 127.0.0.1**, con richiesta e risposta tramite pacchetti affidabili. Il test è registrato in CTest quando `LIFE_ENABLE_ENET=ON` ed è incluso nel workflow ENet esistente. Non è stato creato alcun server UDP pubblico o client Android nativo.
+
+Dettagli e istruzioni: [docs/LIFENETWORK_INVENTORY_V02.md](docs/LIFENETWORK_INVENTORY_V02.md).
