@@ -37,6 +37,8 @@ test('Linux/Windows browser multiplayer smoke', {timeout:12000},async()=>{
   assert.match(html,/id="mini"/);
   assert.match(html,/id="count"/);
   assert.match(html,/Ospedale/);
+  assert.match(html,/id="interact"/);
+  assert.match(html,/type:'interact'/);
   const a=await connect('ws://127.0.0.1:'+port);
   const b=await connect('ws://127.0.0.1:'+port);
   sockets.push(a,b);
@@ -46,6 +48,12 @@ test('Linux/Windows browser multiplayer smoke', {timeout:12000},async()=>{
   const snapshot=await sawTwo;
   assert.equal(snapshot.players.length,2);
   assert.equal(snapshot.players.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.z)),true);
+  // Remote clients cannot trigger a city interaction from their spawn position.
+  let unauthorized=false;
+  a.on('message',data=>{try{if(JSON.parse(String(data)).type==='interaction')unauthorized=true;}catch{}});
+  a.send(JSON.stringify({type:'interact',point:'hospital'}));
+  await new Promise(r=>setTimeout(r,180));
+  assert.equal(unauthorized,false);
   const chat=until(b,m=>m.type==='chat'&&m.message==='ciao');
   a.send(JSON.stringify({type:'chat',message:'ciao'}));
   assert.equal((await chat).message,'ciao');
