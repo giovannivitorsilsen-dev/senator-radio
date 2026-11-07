@@ -3,6 +3,8 @@
 // Original PROJECT LIFE RP inventory domain. Not derived from ox_inventory source.
 // Trusted server operators instantiate this service; no player-controlled API is exposed.
 const NAME=/^[a-z][a-z0-9_]{1,47}$/;
+// Private inventory state: unavailable to game WebSocket clients.
+const STATES=new WeakMap();
 function positiveInt(value,label,max=1000000){
   if(!Number.isSafeInteger(value)||value<1||value>max)throw new RangeError('Invalid '+label);
   return value;
@@ -94,6 +96,68 @@ function makeInventory({catalog,slotCount=24,maxWeightGrams=30000}={}){
     revision++;
     return snapshot();
   };
-  return Object.freeze({add,move,remove,snapshot});
+  const inventory=Object.freeze({add,move,remove,snapshot});
+  STATES.set(inventory,{slots,definitions,maxWeightGrams,getRevision:()=>revision,commit:next=>{
+    next.forEach((row,i)=>{slots[i]=row;});
+    revision++;
+  }});
+  return inventory;
 }
-module.exports={catalogFrom,makeInventory};
+
+/**
+ * Synchronous, cross-inventory all-or-nothing move.
+ * Call ONLY after a trusted server has verified both inventory owners and permissions.
+ * Expected revisions reject stale, repeated requests; durable transactions are NOT implemented.
+ */
+function transferBetween({from,to,sourceSlot,quantity,expectedFromRevision,
+  expectedToRevision,targetSlot}={}){
+  if(from===to)throw Error('Distinct inventories required');
+  const a=STATES.get(from),b=STATES.get(to);
+  if(!a||!b)throw Error('Trusted inventory instances required');
+  if(!Number.isSafeInteger(expectedFromRevision)||!Number.isSafeInteger(expectedToRevision)||
+     a.getRevision()!==expectedFromRevision||b.getRevision()!==expectedToRevision)
+    throw Error('Revision conflict');
+  positiveInt(quantity,'quantity',10000);
+  if(!Number.isSafeInteger(sourceSlot)||sourceSlot<1||sourceSlot>a.slots.length)
+    throw RangeError('Invalid source slot');
+  const source=a.slots[sourceSlot-1];
+  if(!source||source.quantity<quantity)throw Error('Insufficient items');
+  const sourceDef=a.definitions.get(source.itemId);
+  const destinationDef=b.definitions.get(source.itemId);
+  if(!destinationDef||sourceDef.weightGrams!==destinationDef.weightGrams||
+     sourceDef.stackLimit!==destinationDef.stackLimit)
+    throw Error('Incompatible item definition');
+  const nextA=a.slots.map(row=>row?{...row}:null);
+  const nextB=b.slots.map(row=>row?{...row}:null);
+  const totalWeight=nextB.reduce((sum,row)=>
+    sum+(row?b.definitions.get(row.itemId).weightGrams*row.quantity:0),0);
+  if(totalWeight+destinationDef.weightGrams*quantity>b.maxWeightGrams)
+    throw Error('Destination weight limit exceeded');
+  const positions=targetSlot===undefined?nextB.map((_,i)=>i):
+    (Number.isSafeInteger(targetSlot)&&targetSlot>=1&&targetSlot<=nextB.length
+      ?[targetSlot-1]:[]);
+  if(!positions.length)throw RangeError('Invalid target slot');
+  let remaining=quantity;
+  for(const phase of [0,1]){
+    for(const index of positions){
+      const row=nextB[index];
+      if((phase===0&&(!row||row.itemId!==source.itemId))||
+         (phase===1&&row))continue;
+      const available=destinationDef.stackLimit-(row?row.quantity:0);
+      if(available<=0)continue;
+      const count=Math.min(remaining,available);
+      nextB[index]={itemId:source.itemId,quantity:(row?row.quantity:0)+count};
+      remaining-=count;
+      if(remaining===0)break;
+    }
+    if(remaining===0)break;
+  }
+  if(remaining)throw Error('Destination slots full');
+  nextA[sourceSlot-1]=source.quantity===quantity?
+    null:{...source,quantity:source.quantity-quantity};
+  // Both full candidate states are validated before either commit, with no await.
+  a.commit(nextA);
+  b.commit(nextB);
+  return {from:from.snapshot(),to:to.snapshot()};
+}
+module.exports={catalogFrom,makeInventory,transferBetween};
