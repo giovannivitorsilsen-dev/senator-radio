@@ -141,3 +141,11 @@ Dettagli e istruzioni: [docs/LIFENETWORK_INVENTORY_V02.md](docs/LIFENETWORK_INVE
 `InventorySessionService` verifica una sessione LifeAccount e consente solamente letture e trasferimenti **dal proprietario del token**. Non esiste ancora una route HTTP/ENet per i giocatori e `grantFromTrustedServer` è destinato solo a logica server autorizzata. I limiti di peso e gli slot del prototipo Node non sono ancora persistiti nel ledger JDBC.
 
 I test DB sono stati estesi per entrambe le varianti PostgreSQL e MariaDB, ma devono ancora essere verificati su CI. Leggi [docs/LIFEINVENTORY_JDBC_V01.md](docs/LIFEINVENTORY_JDBC_V01.md).
+
+## PROJECT LIFE RP Alpha 1.2 — anteprima browser giocabile (incremento visibile)
+
+È stato aggiornato **il client browser già disponibile sulla porta 3000**: nuova intestazione Alpha 1.2 Preview, HUD con giocatori online, mini-mappa in tempo reale, punti di riferimento originali (parco, piazza/fontana, ospedale), zona corrente e posizionamento iniziale coerente con le coordinate inviate dal server.
+
+Per provarlo dal tuo Xiaomi 15T: apri GitHub Codespaces sul branch `main`, esegui `npm start`, apri la porta `3000` nel browser; aggiorna la scheda (eventualmente ricarica senza cache). **Niente APK né pannello amministrativo sul telefono.**
+
+Questa è ancora una demo WebSocket browser non autenticata: non include LifeAccount JDBC, inventari persistenti, OneSync/LifeSync di produzione, veicoli guidabili, sistemi economici, server browser o abbonamenti. Non è la Alpha 1.2 completa e non è adatta a server pubblici a pagamento. I test HTTP/WebSocket sono stati estesi in `tests/server-smoke.test.js`.
